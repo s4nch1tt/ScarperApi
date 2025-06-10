@@ -43,45 +43,182 @@ async function getEpisodeDetails(url: string) {
     const storyline = $('h5[style*="text-align: center"]').text().trim() || 
                       $('.entry-content p').first().text().trim();
     
-    // Extract episode links
+    // Extract episode links with season detection
     const episodes = [];
-    $('h5[style*="text-align: center"] a, .entry-content h5 a').each((_, element) => {
-      const $el = $(element);
-      const href = $el.attr('href');
-      const text = $el.text().trim();
+    let currentSeason = 1; // Default season
+    
+    // Process all h5 elements in order to maintain season context
+    $('h5[style*="text-align: center"]').each((_, element) => {
+      const $h5 = $(element);
+      const h5Text = $h5.text().trim();
       
-      if (href && text && href.includes('mdrive.today') && !text.includes('Zip')) {
-        episodes.push({
-          url: href,
-          quality: text
+      // Check if this h5 contains season information
+      const seasonMatch = h5Text.match(/Season\s*(\d+)/i);
+      if (seasonMatch) {
+        currentSeason = parseInt(seasonMatch[1]);
+        console.log(`Found season indicator: ${currentSeason} in text: "${h5Text}"`);
+      }
+      
+      // Check for links in this h5 element
+      $h5.find('a').each((_, linkElement) => {
+        const $link = $(linkElement);
+        const href = $link.attr('href');
+        const text = $link.text().trim();
+        
+        if (href && text && href.includes('mdrive.today') && !text.includes('Zip')) {
+          // Extract quality from the link text or parent h5 text
+          let quality = text;
+          
+          // If link text doesn't contain quality info, get it from the h5 text
+          if (!text.match(/\d+p/)) {
+            const qualityMatch = h5Text.match(/(\d+p[^}]*)/);
+            if (qualityMatch) {
+              quality = qualityMatch[1];
+            }
+          }
+          
+          episodes.push({
+            url: href,
+            quality: quality,
+            season: currentSeason,
+            context: h5Text // For debugging
+          });
+          
+          console.log(`Added episode: Season ${currentSeason}, Quality: ${quality}, URL: ${href}`);
+        }
+      });
+      
+      // Also check for links immediately after this h5 (next siblings)
+      let nextElement = $h5.next();
+      while (nextElement.length && nextElement.is('h5')) {
+        const nextText = nextElement.text().trim();
+        
+        // If next h5 has season info, break to let it be processed in main loop
+        if (nextText.match(/Season\s*(\d+)/i)) {
+          break;
+        }
+        
+        // Check for links in the next h5
+        nextElement.find('a').each((_, linkElement) => {
+          const $link = $(linkElement);
+          const href = $link.attr('href');
+          const text = $link.text().trim();
+          
+          if (href && text && href.includes('mdrive.today') && !text.includes('Zip')) {
+            let quality = text;
+            
+            // If link text doesn't contain quality info, try to extract from context
+            if (!text.match(/\d+p/)) {
+              const qualityMatch = nextText.match(/(\d+p[^}]*)/);
+              if (qualityMatch) {
+                quality = qualityMatch[1];
+              }
+            }
+            
+            episodes.push({
+              url: href,
+              quality: quality,
+              season: currentSeason,
+              context: nextText
+            });
+            
+            console.log(`Added episode from next h5: Season ${currentSeason}, Quality: ${quality}, URL: ${href}`);
+          }
         });
+        
+        nextElement = nextElement.next();
       }
     });
 
-    // Extract additional quality links that aren't in h5 tags
+    // Also process standalone links that might not be in h5 tags
     $('a[href*="mdrive.today"], a[href*="archives"]').each((_, element) => {
       const $el = $(element);
       const href = $el.attr('href');
       const text = $el.text().trim();
       
-      // Only include if it looks like a download link, isn't a Zip file, and wasn't already included
+      // Skip if already processed
+      if (episodes.some(ep => ep.url === href)) {
+        return;
+      }
+      
+      // Only include if it looks like a download link and isn't a Zip file
       if (href && 
           text && 
           (text.includes('p') || text.includes('MB') || text.includes('GB')) &&
-          !text.includes('Zip') &&
-          !episodes.some(ep => ep.url === href)) {
+          !text.includes('Zip')) {
+        
+        // Try to determine season from surrounding context
+        let linkSeason = 1;
+        
+        // Look at parent elements for season information
+        const parents = $el.parents().slice(0, 3); // Check up to 3 parent levels
+        parents.each((_, parent) => {
+          const parentText = $(parent).text();
+          const seasonMatch = parentText.match(/Season\s*(\d+)/i);
+          if (seasonMatch) {
+            linkSeason = parseInt(seasonMatch[1]);
+            return false; // Break out of each loop
+          }
+        });
+        
+        // Look at preceding siblings for season context
+        let prevElement = $el.parent().prev();
+        let searchDepth = 0;
+        while (prevElement.length && searchDepth < 5) {
+          const prevText = prevElement.text();
+          const seasonMatch = prevText.match(/Season\s*(\d+)/i);
+          if (seasonMatch) {
+            linkSeason = parseInt(seasonMatch[1]);
+            break;
+          }
+          prevElement = prevElement.prev();
+          searchDepth++;
+        }
+        
         episodes.push({
           url: href,
-          quality: text
+          quality: text,
+          season: linkSeason,
+          context: $el.parent().text().trim()
         });
+        
+        console.log(`Added standalone episode: Season ${linkSeason}, Quality: ${text}, URL: ${href}`);
       }
     });
+
+    // Remove duplicates and sort by season and quality
+    const uniqueEpisodes = episodes.filter((episode, index, self) => 
+      index === self.findIndex(e => e.url === episode.url)
+    ).sort((a, b) => {
+      if (a.season !== b.season) return a.season - b.season;
+      
+      // Sort by quality (480p, 720p, 1080p, 2160p)
+      const getQualityOrder = (quality) => {
+        if (quality.includes('480p')) return 1;
+        if (quality.includes('720p')) return 2;
+        if (quality.includes('1080p')) return 3;
+        if (quality.includes('2160p') || quality.includes('4K')) return 4;
+        return 5;
+      };
+      
+      return getQualityOrder(a.quality) - getQualityOrder(b.quality);
+    });
+
+    console.log(`Total episodes found: ${uniqueEpisodes.length}`);
+    console.log('Episodes by season:', uniqueEpisodes.reduce((acc, ep) => {
+      acc[ep.season] = (acc[ep.season] || 0) + 1;
+      return acc;
+    }, {}));
 
     return {
       mainImage: normalizeUrl(mainImage),
       imdbRating,
       storyline,
-      episodes
+      episodes: uniqueEpisodes.map(ep => ({
+        url: ep.url,
+        quality: ep.quality,
+        season: ep.season
+      }))
     };
   } catch (error) {
     console.error('Error fetching episode details:', error);

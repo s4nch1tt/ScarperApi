@@ -115,11 +115,13 @@ interface HubCloudLink {
   title: string;
   url: string;
   id: string;
+  season?: number; // Add season property
 }
 
 interface Episode {
   title: string;
   link: string;
+  season?: number; // Add season property
 }
 
 interface MdriveEpisode {
@@ -127,6 +129,7 @@ interface MdriveEpisode {
   quality: string;
   size: string;
   hubCloudLinks: HubCloudLink[];
+  season?: number; // Add season property
 }
 
 interface StreamLink {
@@ -146,6 +149,114 @@ interface ApiResponse {
   data?: MovieDetails;
   error?: string;
 }
+
+// Helper function to extract season from title or HTML
+const extractSeasonFromContent = (title: string, htmlContent?: string): number => {
+  // First, try to extract from the title using comprehensive patterns
+  const seasonPatterns = [
+    /season\s*(\d+)/i,
+    /s(\d+)(?:e\d+)?/i,
+    /series\s*(\d+)/i,
+    /(\d+)(?:st|nd|rd|th)?\s*season/i
+  ];
+  
+  for (const pattern of seasonPatterns) {
+    const titleMatch = title.match(pattern);
+    if (titleMatch) {
+      return parseInt(titleMatch[1]);
+    }
+  }
+  
+  // If HTML content is available, try to extract season from it
+  if (htmlContent) {
+    // Remove HTML tags for better text matching
+    const cleanHtml = htmlContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+    
+    // More specific HTML patterns for season detection
+    const htmlPatterns = [
+      /Season\s*(\d+)/gi,
+      /season\s*(\d+)/gi,
+      /S(\d+)/g,
+      /Series\s*(\d+)/gi
+    ];
+    
+    // Get all season matches from HTML content
+    const allSeasons = new Set<number>();
+    
+    for (const pattern of htmlPatterns) {
+      let match;
+      while ((match = pattern.exec(cleanHtml)) !== null) {
+        const seasonNum = parseInt(match[1]);
+        if (seasonNum > 0 && seasonNum <= 20) { // Reasonable season range
+          allSeasons.add(seasonNum);
+        }
+      }
+    }
+    
+    // If we found seasons in HTML, try to match with the title/link
+    if (allSeasons.size > 0) {
+      const seasonsArray = Array.from(allSeasons).sort();
+      
+      // Try to match the title with specific season indicators
+      for (const season of seasonsArray) {
+        const seasonRegex = new RegExp(`season\\s*${season}|s${season}`, 'i');
+        if (seasonRegex.test(title) || seasonRegex.test(htmlContent)) {
+          console.log(`Found season ${season} for title: "${title}"`);
+          return season;
+        }
+      }
+      
+      // If we can't match specifically, return the first season found
+      console.log(`Using first detected season ${seasonsArray[0]} for title: "${title}"`);
+      return seasonsArray[0];
+    }
+  }
+  
+  // Check if title contains episode indicators for different seasons
+  const episodeSeasonMatch = title.match(/S(\d+)E\d+/i);
+  if (episodeSeasonMatch) {
+    return parseInt(episodeSeasonMatch[1]);
+  }
+  
+  // Default to season 1
+  return 1;
+};
+
+// Helper function to group episodes by season
+const groupEpisodesBySeason = (episodes: Episode[]): Record<number, Episode[]> => {
+  return episodes.reduce((acc, episode) => {
+    const season = episode.season || 1;
+    if (!acc[season]) {
+      acc[season] = [];
+    }
+    acc[season].push(episode);
+    return acc;
+  }, {} as Record<number, Episode[]>);
+};
+
+// Helper function to group HubCloud links by season
+const groupHubCloudBySeason = (links: HubCloudLink[]): Record<number, HubCloudLink[]> => {
+  return links.reduce((acc, link) => {
+    const season = link.season || 1;
+    if (!acc[season]) {
+      acc[season] = [];
+    }
+    acc[season].push(link);
+    return acc;
+  }, {} as Record<number, HubCloudLink[]>);
+};
+
+// Helper function to group MDrive episodes by season
+const groupMdriveBySeason = (episodes: MdriveEpisode[]): Record<number, MdriveEpisode[]> => {
+  return episodes.reduce((acc, episode) => {
+    const season = episode.season || 1;
+    if (!acc[season]) {
+      acc[season] = [];
+    }
+    acc[season].push(episode);
+    return acc;
+  }, {} as Record<number, MdriveEpisode[]>);
+};
 
 export default function MovieDetailPage({ params }: { params: { id: string } }) {
   const { user, loading: authLoading } = useAuth()
@@ -168,6 +279,8 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
   const [hubCloudLinks, setHubCloudLinks] = useState<HubCloudLink[]>([])
   const [fetchingHubCloud, setFetchingHubCloud] = useState(false)
   const [mdriveEpisodes, setMdriveEpisodes] = useState<MdriveEpisode[]>([])
+  const [activeTab, setActiveTab] = useState<string>("1")
+  const [selectedSeason, setSelectedSeason] = useState<number | null>(null)
 
   // Unwrap the params object using React.use()
   const unwrappedParams = use(params);
@@ -215,14 +328,21 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
         if (data.success && data.data) {
           setMovieDetails(data.data)
           
-          // Auto-select 480p quality if available
-          const quality480p = data.data.episodes.find(ep => ep.quality.includes('480p'))
-          if (quality480p) {
-            setSelectedQuality(quality480p)
-            if (quality480p.url.includes('mdrive.today')) {
-              fetchHubCloudLinks(quality480p.url)
-            } else {
-              fetchEpisodes(quality480p.url)
+          // Get available seasons and auto-select the first one
+          const availableSeasons = [...new Set(data.data.episodes.map(ep => ep.season))].sort((a, b) => a - b)
+          if (availableSeasons.length > 0) {
+            setSelectedSeason(availableSeasons[0])
+            
+            // Auto-select 480p quality for the first season if available
+            const firstSeasonEpisodes = data.data.episodes.filter(ep => ep.season === availableSeasons[0])
+            const quality480p = firstSeasonEpisodes.find(ep => ep.quality.includes('480p'))
+            if (quality480p) {
+              setSelectedQuality(quality480p)
+              if (quality480p.url.includes('mdrive.today')) {
+                fetchHubCloudLinks(quality480p.url)
+              } else {
+                fetchEpisodes(quality480p.url)
+              }
             }
           }
         } else {
@@ -261,10 +381,80 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
       
       if (data.success) {
         if (data.episodes && data.episodes.length > 0) {
-          setMdriveEpisodes(data.episodes)
+          // Add season detection for MDrive episodes with debugging
+          const episodesWithSeasons = data.episodes.map((ep: MdriveEpisode, index: number) => {
+            const season = extractSeasonFromContent(ep.episodeNumber, data.htmlContent);
+            console.log(`Episode ${index}: "${ep.episodeNumber}" -> Season ${season}`);
+            return {
+              ...ep,
+              season
+            };
+          });
+          setMdriveEpisodes(episodesWithSeasons)
+          
+          // Debug: Log detected seasons
+          const detectedSeasons = [...new Set(episodesWithSeasons.map(ep => ep.season))];
+          console.log("MDrive detected seasons:", detectedSeasons);
+          
           toast.success(`Found ${data.episodes.length} episodes`)
         } else if (data.directLinks && data.directLinks.length > 0) {
-          setHubCloudLinks(data.directLinks)
+          // For direct links, we need to analyze the entire HTML content to detect seasons
+          const seasonsInHtml = new Set<number>();
+          
+          if (data.htmlContent) {
+            const cleanHtml = data.htmlContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+            const seasonMatches = cleanHtml.match(/Season\s*(\d+)/gi);
+            
+            if (seasonMatches) {
+              seasonMatches.forEach(match => {
+                const seasonNum = parseInt(match.match(/(\d+)/)?.[1] || '1');
+                if (seasonNum > 0 && seasonNum <= 20) {
+                  seasonsInHtml.add(seasonNum);
+                }
+              });
+            }
+          }
+          
+          console.log("Seasons found in HTML:", Array.from(seasonsInHtml));
+          
+          // Add season detection for direct links with more intelligent mapping
+          const linksWithSeasons = data.directLinks.map((link: HubCloudLink, index: number) => {
+            // Try to extract season from the link title or URL
+            let season = extractSeasonFromContent(link.title, data.htmlContent);
+            
+            // If multiple seasons detected and we can't determine from title,
+            // try to map based on link patterns or index
+            if (seasonsInHtml.size > 1 && season === 1) {
+              // Check if link title contains quality indicators that might help identify season
+              const qualityMatch = link.title.match(/(\d+p)/);
+              const sizeMatch = link.title.match(/(\d+(?:\.\d+)?(?:GB|MB))/i);
+              
+              // More sophisticated season detection based on URL patterns
+              if (link.url.includes('archives/')) {
+                const archiveId = link.url.match(/archives\/(\d+)/)?.[1];
+                if (archiveId) {
+                  const archiveNum = parseInt(archiveId);
+                  // Use archive ID patterns to guess season (this is heuristic)
+                  if (archiveNum > 10000) {
+                    season = 2; // Newer archives likely season 2
+                  }
+                }
+              }
+            }
+            
+            console.log(`Link ${index}: "${link.title}" -> Season ${season}`);
+            return {
+              ...link,
+              season
+            };
+          });
+          
+          setHubCloudLinks(linksWithSeasons)
+          
+          // Debug: Log detected seasons
+          const detectedSeasons = [...new Set(linksWithSeasons.map(link => link.season))];
+          console.log("HubCloud detected seasons:", detectedSeasons);
+          
           toast.success(`Found ${data.directLinks.length} HubCloud links`)
         } else {
           toast.error("No content found")
@@ -302,28 +492,54 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
       
       const episodeData = await response.json()
       
-      console.log("Episode data received:", episodeData) // Debug log
+      console.log("Episode data received:", episodeData)
       
       if (Array.isArray(episodeData) && episodeData.length > 0) {
-        setEpisodes(episodeData)
+        // Add season detection for episodes with debugging
+        const episodesWithSeasons = episodeData.map((ep: Episode, index: number) => {
+          const season = extractSeasonFromContent(ep.title);
+          console.log(`Episode ${index}: "${ep.title}" -> Season ${season}`);
+          return {
+            ...ep,
+            season
+          };
+        });
+        setEpisodes(episodesWithSeasons)
+        
+        // Debug: Log detected seasons
+        const detectedSeasons = [...new Set(episodesWithSeasons.map(ep => ep.season))];
+        console.log("Detected seasons:", detectedSeasons);
       } else if (episodeData && episodeData.episodes && Array.isArray(episodeData.episodes)) {
-        setEpisodes(episodeData.episodes)
+        // Add season detection for episodes with debugging
+        const episodesWithSeasons = episodeData.episodes.map((ep: Episode, index: number) => {
+          const season = extractSeasonFromContent(ep.title);
+          console.log(`Episode ${index}: "${ep.title}" -> Season ${season}`);
+          return {
+            ...ep,
+            season
+          };
+        });
+        setEpisodes(episodesWithSeasons)
+        
+        // Debug: Log detected seasons
+        const detectedSeasons = [...new Set(episodesWithSeasons.map(ep => ep.season))];
+        console.log("Detected seasons:", detectedSeasons);
       } else {
-        // If the API doesn't return episodes, create a single episode from the URL
         console.log("No episodes found, creating single episode from URL")
         const singleEpisode = {
           title: "Movie",
-          link: url
+          link: url,
+          season: 1
         }
         setEpisodes([singleEpisode])
       }
     } catch (error) {
       console.error("Error fetching episodes:", error)
       
-      // Fallback: create a single episode from the URL if API fails
       const fallbackEpisode = {
         title: "Movie",
-        link: url
+        link: url,
+        season: 1
       }
       setEpisodes([fallbackEpisode])
       
@@ -402,6 +618,28 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
     }
   }
 
+  const handleSeasonChange = (season: number) => {
+    setSelectedSeason(season)
+    setSelectedQuality(null)
+    setEpisodes([])
+    setHubCloudLinks([])
+    setMdriveEpisodes([])
+    
+    // Auto-select 480p quality for the new season if available
+    if (movieDetails) {
+      const seasonEpisodes = movieDetails.episodes.filter(ep => ep.season === season)
+      const quality480p = seasonEpisodes.find(ep => ep.quality.includes('480p'))
+      if (quality480p) {
+        setSelectedQuality(quality480p)
+        if (quality480p.url.includes('mdrive.today')) {
+          fetchHubCloudLinks(quality480p.url)
+        } else {
+          fetchEpisodes(quality480p.url)
+        }
+      }
+    }
+  }
+
   const handleQualityClick = (quality: {url: string, quality: string}) => {
     setSelectedQuality(quality)
     setEpisodes([])
@@ -415,13 +653,142 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
     }
   }
 
-  const handleHubCloudLinkClick = async (hubCloudLink: HubCloudLink) => {
+  const handleHubCloudLinkClick = async (link: HubCloudLink) => {
+    const fakeEpisode: Episode = {
+      title: link.title,
+      link: link.url,
+      season: link.season
+    }
+    setSelectedEpisode(fakeEpisode)
     setDialogOpen(true)
     setStreamLinks([])
     setCopiedIndex(null)
-    setSelectedEpisode({ title: hubCloudLink.title, link: hubCloudLink.url })
-    fetchVideoUrl(hubCloudLink.url)
+    fetchVideoUrl(link.url)
   }
+
+  // Helper function to extract season from title or HTML
+  const extractSeasonFromContent = (title: string, htmlContent?: string): number => {
+    // First, try to extract from the title using comprehensive patterns
+    const seasonPatterns = [
+      /season\s*(\d+)/i,
+      /s(\d+)(?:e\d+)?/i,
+      /series\s*(\d+)/i,
+      /(\d+)(?:st|nd|rd|th)?\s*season/i
+    ];
+    
+    for (const pattern of seasonPatterns) {
+      const titleMatch = title.match(pattern);
+      if (titleMatch) {
+        return parseInt(titleMatch[1]);
+      }
+    }
+    
+    // If HTML content is available, try to extract season from it
+    if (htmlContent) {
+      // Remove HTML tags for better text matching
+      const cleanHtml = htmlContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+      
+      // More specific HTML patterns for season detection
+      const htmlPatterns = [
+        /Season\s*(\d+)/gi,
+        /season\s*(\d+)/gi,
+        /S(\d+)/g,
+        /Series\s*(\d+)/gi
+      ];
+      
+      // Get all season matches from HTML content
+      const allSeasons = new Set<number>();
+      
+      for (const pattern of htmlPatterns) {
+        let match;
+        while ((match = pattern.exec(cleanHtml)) !== null) {
+          const seasonNum = parseInt(match[1]);
+          if (seasonNum > 0 && seasonNum <= 20) { // Reasonable season range
+            allSeasons.add(seasonNum);
+          }
+        }
+      }
+      
+      // If we found seasons in HTML, try to match with the title/link
+      if (allSeasons.size > 0) {
+        const seasonsArray = Array.from(allSeasons).sort();
+        
+        // Try to match the title with specific season indicators
+        for (const season of seasonsArray) {
+          const seasonRegex = new RegExp(`season\\s*${season}|s${season}`, 'i');
+          if (seasonRegex.test(title) || seasonRegex.test(htmlContent)) {
+            console.log(`Found season ${season} for title: "${title}"`);
+            return season;
+          }
+        }
+        
+        // If we can't match specifically, return the first season found
+        console.log(`Using first detected season ${seasonsArray[0]} for title: "${title}"`);
+        return seasonsArray[0];
+      }
+    }
+    
+    // Check if title contains episode indicators for different seasons
+    const episodeSeasonMatch = title.match(/S(\d+)E\d+/i);
+    if (episodeSeasonMatch) {
+      return parseInt(episodeSeasonMatch[1]);
+    }
+    
+    // Default to season 1
+    return 1;
+  };
+
+  // Helper function to group episodes by season
+  const groupEpisodesBySeason = (episodes: Episode[]): Record<number, Episode[]> => {
+    return episodes.reduce((acc, episode) => {
+      const season = episode.season || 1;
+      if (!acc[season]) {
+        acc[season] = [];
+      }
+      acc[season].push(episode);
+      return acc;
+    }, {} as Record<number, Episode[]>);
+  };
+
+  // Helper function to group HubCloud links by season
+  const groupHubCloudBySeason = (links: HubCloudLink[]): Record<number, HubCloudLink[]> => {
+    return links.reduce((acc, link) => {
+      const season = link.season || 1;
+      if (!acc[season]) {
+        acc[season] = [];
+      }
+      acc[season].push(link);
+      return acc;
+    }, {} as Record<number, HubCloudLink[]>);
+  };
+
+  // Helper function to group MDrive episodes by season
+  const groupMdriveBySeason = (episodes: MdriveEpisode[]): Record<number, MdriveEpisode[]> => {
+    return episodes.reduce((acc, episode) => {
+      const season = episode.season || 1;
+      if (!acc[season]) {
+        acc[season] = [];
+      }
+      acc[season].push(episode);
+      return acc;
+    }, {} as Record<number, MdriveEpisode[]>);
+  };
+
+  // Get available seasons from API response
+  const getAvailableSeasonsFromAPI = () => {
+    if (!movieDetails) return []
+    const seasons = [...new Set(movieDetails.episodes.map(ep => ep.season))].sort((a, b) => a - b)
+    return seasons
+  }
+
+  // Get quality options for selected season
+  const getQualityOptionsForSeason = () => {
+    if (!movieDetails || selectedSeason === null) return []
+    return movieDetails.episodes.filter(ep => ep.season === selectedSeason)
+  }
+
+  const apiSeasons = getAvailableSeasonsFromAPI()
+  const seasonQualityOptions = getQualityOptionsForSeason()
 
   if (authLoading) {
     return (
@@ -517,59 +884,110 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
                       </div>
                     </div>
                     
-                    {/* Download Options with Dropdown */}
-                    <div className="mt-6">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="secondary" className="w-auto shadow-sm">
-                            Select Quality
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-28" align="center">
-                          {movieDetails.episodes.map((quality, idx) => (
-                            <DropdownMenuItem 
-                              key={idx}
-                              onClick={() => handleQualityClick(quality)}
-                              className="cursor-pointer justify-center"
-                            >
-                              {extractQuality(quality.quality)}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
+                    {/* Season Selector */}
+                    {apiSeasons.length > 1 && (
+                      <div className="mt-6">
+                        <h3 className="text-lg font-semibold mb-3">Select Season</h3>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="flex items-center gap-2">
+                              Season {selectedSeason}
+                              <svg
+                                width="15"
+                                height="15"
+                                viewBox="0 0 15 15"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4 w-4"
+                              >
+                                <path
+                                  d="M4.93179 5.43179C4.75605 5.60753 4.75605 5.89245 4.93179 6.06819C5.10753 6.24392 5.39245 6.24392 5.56819 6.06819L7.49999 4.13638L9.43179 6.06819C9.60753 6.24392 9.89245 6.24392 10.0682 6.06819C10.2439 5.89245 10.2439 5.60753 10.0682 5.43179L7.81819 3.18179C7.73379 3.0974 7.61933 3.04999 7.49999 3.04999C7.38064 3.04999 7.26618 3.0974 7.18179 3.18179L4.93179 5.43179ZM10.0682 9.56819C10.2439 9.39245 10.2439 9.10753 10.0682 8.93179C9.89245 8.75606 9.60753 8.75606 9.43179 8.93179L7.49999 10.8636L5.56819 8.93179C5.39245 8.75606 5.10753 8.75606 4.93179 8.93179C4.75605 9.10753 4.75605 9.39245 4.93179 9.56819L7.18179 11.8182C7.26618 11.9026 7.38064 11.95 7.49999 11.95C7.61933 11.95 7.73379 11.9026 7.81819 11.8182L10.0682 9.56819Z"
+                                  fill="currentColor"
+                                  fillRule="evenodd"
+                                  clipRule="evenodd"
+                                ></path>
+                              </svg>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            {apiSeasons.map((season) => (
+                              <DropdownMenuItem 
+                                key={season}
+                                onClick={() => handleSeasonChange(season)}
+                                className={selectedSeason === season ? "bg-accent" : ""}
+                              >
+                                Season {season}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )}
+                    
+                    {/* Quality Selector - Only show qualities for selected season */}
+                    {selectedSeason !== null && seasonQualityOptions.length > 0 && (
+                      <div className="mt-6">
+                        <h3 className="text-lg font-semibold mb-3">
+                          Select Quality - Season {selectedSeason}
+                        </h3>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="secondary" className="w-auto shadow-sm">
+                              {selectedQuality ? extractQuality(selectedQuality.quality) : "Select Quality"}
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-40" align="center">
+                            {seasonQualityOptions.map((quality, idx) => (
+                              <DropdownMenuItem 
+                                key={idx}
+                                onClick={() => handleQualityClick(quality)}
+                                className="cursor-pointer"
+                              >
+                                {extractQuality(quality.quality)}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )}
 
                     {/* HubCloud Links Section */}
                     {selectedQuality && selectedQuality.url.includes('mdrive.today') && mdriveEpisodes.length === 0 && (
                       <div className="mt-6">
                         <h3 className="text-lg font-semibold mb-3">
-                          HubCloud Links - {extractQuality(selectedQuality.quality)}
+                          HubCloud Links - {extractQuality(selectedQuality.quality)} - Season {selectedSeason}
                         </h3>
                         {fetchingHubCloud ? (
                           <div className="flex items-center gap-2 py-4">
                             <Loader2 className="h-4 w-4 animate-spin" />
                             <span className="text-sm text-muted-foreground">Loading HubCloud links...</span>
                           </div>
-                        ) : hubCloudLinks.length > 0 && (
+                        ) : hubCloudLinks.length > 0 ? (
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                             {hubCloudLinks.map((link, idx) => (
                               <Button
                                 key={idx}
                                 variant="outline"
-                                className="text-xs h-auto p-3 flex flex-col items-start gap-1"
+                                className="text-xs h-auto p-3 flex flex-col items-start gap-1 max-w-full"
                                 onClick={() => handleHubCloudLinkClick(link)}
                               >
-                                <div className="flex items-center gap-2 w-full">
-                                  <Download className="h-3 w-3 text-blue-500" />
-                                  <span className="font-medium">{link.title}</span>
+                                <div className="flex items-center gap-2 w-full min-w-0">
+                                  <Download className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                                  <span className="font-medium truncate" title={link.title}>
+                                    {link.title.length > 40 ? `${link.title.slice(0, 40)}...` : link.title}
+                                  </span>
                                 </div>
                                 {link.id && (
-                                  <span className="text-xs text-muted-foreground">
+                                  <span className="text-xs text-muted-foreground self-start">
                                     {link.id.replace('HubCloud-', '')}
                                   </span>
                                 )}
                               </Button>
                             ))}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-muted-foreground py-4">
+                            No HubCloud links found
                           </div>
                         )}
                       </div>
@@ -579,7 +997,7 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
                     {selectedQuality && !selectedQuality.url.includes('mdrive.today') && (
                       <div className="mt-6">
                         <h3 className="text-lg font-semibold mb-3">
-                          Episodes - {extractQuality(selectedQuality.quality)}
+                          Episodes - {extractQuality(selectedQuality.quality)} - Season {selectedSeason}
                         </h3>
                         {fetchingEpisodes ? (
                           <div className="flex items-center gap-2 py-4">
@@ -608,7 +1026,7 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
                           </div>
                         ) : (
                           <div className="text-sm text-muted-foreground py-4">
-                            No episodes found for this quality
+                            No episodes found
                           </div>
                         )}
                       </div>
@@ -618,7 +1036,7 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
                     {selectedQuality && selectedQuality.url.includes('mdrive.today') && mdriveEpisodes.length > 0 && (
                       <div className="mt-6">
                         <h3 className="text-lg font-semibold mb-3">
-                          Episodes - {extractQuality(selectedQuality.quality)}
+                          Episodes - {extractQuality(selectedQuality.quality)} - Season {selectedSeason}
                         </h3>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
                           {mdriveEpisodes.map((episode, idx) => (
@@ -641,8 +1059,6 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
                         </div>
                       </div>
                     )}
-
-                    {/* HubCloud Direct Links Section (when no episodes found) - REMOVE THIS ENTIRE SECTION */}
                   </div>
                 </div>
 
