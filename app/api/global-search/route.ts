@@ -37,10 +37,15 @@ export async function GET(request: Request) {
       // Search KM movies
       fetch(`${request.url.split('/api')[0]}/api/kmmovies?search=${encodeURIComponent(query)}`, {
         headers: { 'x-api-key': request.headers.get('x-api-key') || '' }
+      }).then(res => res.json()).catch(() => ({ success: false, posts: [] })),
+      
+      // Search DesireMovies
+      fetch(`${request.url.split('/api')[0]}/api/desiremovies?search=${encodeURIComponent(query)}`, {
+        headers: { 'x-api-key': request.headers.get('x-api-key') || '' }
       }).then(res => res.json()).catch(() => ({ success: false, posts: [] }))
     ];
 
-    const [animeResults, moviesResults, kmMoviesResults] = await Promise.all(searchPromises);
+    const [animeResults, moviesResults, kmMoviesResults, desireMoviesResults] = await Promise.all(searchPromises);
 
     // Format results for global search
     const formatResults = (results: any, type: string) => {
@@ -54,7 +59,12 @@ export async function GET(request: Request) {
         imageUrl: item.imageUrl || item.image || '',
         postUrl: item.postUrl || item.url || '',
         isSeries: item.isSeries || false,
-        type: item.type || type
+        type: item.type || type,
+        website: item.website || type,
+        releaseYear: item.releaseYear,
+        qualities: item.qualities,
+        languages: item.languages,
+        isDualAudio: item.isDualAudio
       }));
 
       return {
@@ -67,8 +77,9 @@ export async function GET(request: Request) {
     const anime = formatResults(animeResults, 'anime');
     const movies = formatResults(moviesResults, 'movie');
     const kmmovies = formatResults(kmMoviesResults, 'kmmovie');
+    const desiremovies = formatResults(desireMoviesResults, 'desiremovie');
 
-    const totalResults = anime.count + movies.count + kmmovies.count;
+    const totalResults = anime.count + movies.count + kmmovies.count + desiremovies.count;
 
     return NextResponse.json({
       success: true,
@@ -77,7 +88,8 @@ export async function GET(request: Request) {
       results: {
         anime,
         movies,
-        kmmovies
+        kmmovies,
+        desiremovies
       },
       remainingRequests: authResult.apiKey ? (authResult.apiKey.requestsLimit - authResult.apiKey.requestsUsed - 1) : 0
     });

@@ -66,6 +66,11 @@ const navItems = [
     icon: Video,
   },
   {
+    title: "DesireMovies",
+    url: "/dashboard/desiremovies",
+    icon: Video,
+  },
+  {
     title: "API Keys",
     url: "/dashboard/api-keys",
     icon: Key,
