@@ -10,7 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Key, Plus, Trash2, Eye, EyeOff, Copy, User, Check } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Loader2, Key, Plus, Trash2, Eye, EyeOff, Copy, Check, TrendingUp, Activity, Calendar } from 'lucide-react';
 import { ApiKey } from '@/lib/db/schema';
 import { toast } from 'sonner';
 
@@ -26,6 +27,9 @@ export default function ApiKeysPage() {
   const [error, setError] = useState('');
   const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
+
+  const usagePercentage = Math.round((userRequestsUsed / userRequestsLimit) * 100) || 0;
+  const remainingRequests = userRequestsLimit - userRequestsUsed;
 
   useEffect(() => {
     if (user) {
@@ -159,107 +163,135 @@ export default function ApiKeysPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <div className="border-b">
-      </div>
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-6">
-        {/* User Request Usage Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="w-5 h-5" />
-              Your Request Usage
-            </CardTitle>
-            <CardDescription>
-              Total requests used across all your API keys
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Usage</span>
-                <span className="text-sm text-muted-foreground">
-                  {userRequestsUsed.toLocaleString()} / {userRequestsLimit.toLocaleString()}
-                </span>
-              </div>
-              <div className="w-full bg-muted rounded-full h-3">
-                <div
-                  className="bg-primary h-3 rounded-full transition-all duration-300"
-                  style={{
-                    width: `${Math.min((userRequestsUsed / userRequestsLimit) * 100, 100)}%`,
-                  }}
-                />
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {Math.round((userRequestsUsed / userRequestsLimit) * 100) || 0}% used
-                {userRequestsUsed >= userRequestsLimit && (
-                  <span className="text-destructive ml-2">• Limit reached</span>
-                )}
-              </div>
+        <div className="flex h-16 items-center px-4">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
+              <Key className="w-4 h-4 text-primary" />
             </div>
-          </CardContent>
-        </Card>
-
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-muted-foreground">
-              Manage your API keys for accessing our services
-            </p>
+            <div>
+              <h1 className="text-lg font-semibold">API Keys</h1>
+              <p className="text-sm text-muted-foreground">Manage your API access</p>
+            </div>
           </div>
+        </div>
+      </div>
+      
+      <div className="flex flex-1 flex-col gap-6 p-6">
+        {/* Usage Overview Section */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {/* Total Usage Card */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Usage</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{userRequestsUsed.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">
+                of {userRequestsLimit.toLocaleString()} requests
+              </p>
+            </CardContent>
+          </Card>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button disabled={userRequestsUsed >= userRequestsLimit}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create New Key
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create New API Key</DialogTitle>
-                <DialogDescription>
-                  Give your API key a name to help you identify it later.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="keyName">Key Name</Label>
-                  <Input
-                    id="keyName"
-                    value={newKeyName}
-                    onChange={(e) => setNewKeyName(e.target.value)}
-                    placeholder="My API Key"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  onClick={createApiKey}
-                  disabled={creating || !newKeyName.trim()}
-                >
-                  {creating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Create Key
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          {/* Remaining Requests Card */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Remaining</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{remainingRequests.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">
+                requests left
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Usage Percentage Card */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Usage Rate</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{usagePercentage}%</div>
+              <Progress value={usagePercentage} className="mt-2" />
+            </CardContent>
+          </Card>
+
+          {/* Active Keys Card */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Keys</CardTitle>
+              <Key className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{apiKeys.filter(key => key.isActive).length}</div>
+              <p className="text-xs text-muted-foreground">
+                of {apiKeys.length} total keys
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
-        {error && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
+        {/* API Keys Management Section */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Key className="w-5 h-5" />
-              Your API Keys
-            </CardTitle>
-            <CardDescription>
-              All API keys share your total request limit of {userRequestsLimit.toLocaleString()} requests.
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Key className="w-5 h-5" />
+                  API Keys
+                </CardTitle>
+                <CardDescription>
+                  Create and manage your API keys for accessing our services
+                </CardDescription>
+              </div>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button disabled={userRequestsUsed >= userRequestsLimit}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create New Key
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create New API Key</DialogTitle>
+                    <DialogDescription>
+                      Give your API key a name to help you identify it later.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="keyName">Key Name</Label>
+                      <Input
+                        id="keyName"
+                        value={newKeyName}
+                        onChange={(e) => setNewKeyName(e.target.value)}
+                        placeholder="My API Key"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      onClick={createApiKey}
+                      disabled={creating || !newKeyName.trim()}
+                    >
+                      {creating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      Create Key
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
+            {error && (
+              <Alert variant="destructive" className="mx-6 mb-6">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-6 h-6 animate-spin mr-2" />
@@ -336,11 +368,14 @@ export default function ApiKeysPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="py-4 text-muted-foreground">
-                          {new Date(apiKey.createdAt).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                          })}
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(apiKey.createdAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </div>
                         </TableCell>
                         <TableCell className="py-4 text-right">
                           <Button
@@ -360,6 +395,19 @@ export default function ApiKeysPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Usage Limit Warning */}
+        {usagePercentage >= 80 && (
+          <Alert className={usagePercentage >= 100 ? "border-destructive" : "border-orange-500"}>
+            <TrendingUp className="h-4 w-4" />
+            <AlertDescription>
+              {usagePercentage >= 100 
+                ? "You've reached your request limit. Some API calls may be restricted."
+                : `You've used ${usagePercentage}% of your request limit. Consider monitoring your usage.`
+              }
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
     </div>
   );
