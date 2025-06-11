@@ -102,11 +102,13 @@ export class ApiKeyService {
         .limit(1);
 
       if (!apiKey) {
+        console.log('API key not found:', keyValue.slice(0, 8) + '...');
         return null;
       }
 
       // Check if key is active
       if (!apiKey.isActive) {
+        console.log('API key is inactive:', keyValue.slice(0, 8) + '...');
         return null;
       }
 
@@ -115,26 +117,36 @@ export class ApiKeyService {
       const requestsLimit = Number(apiKey.userRequestsLimit) || 1000;
       
       if (requestsUsed >= requestsLimit) {
+        console.log('Request limit exceeded:', { requestsUsed, requestsLimit });
         return null;
       }
 
       // Increment user's usage count
+      console.log('Incrementing usage count for user:', apiKey.userId);
       await db
         .update(usersTable)
         .set({
-          requestsUsed: sql`${usersTable.requestsUsed} + 1`
+          requestsUsed: sql`COALESCE(${usersTable.requestsUsed}, 0) + 1`
         })
         .where(eq(usersTable.uid, apiKey.userId));
+
+      const newRequestsUsed = requestsUsed + 1;
+      console.log('Usage incremented successfully:', { 
+        userId: apiKey.userId, 
+        oldCount: requestsUsed, 
+        newCount: newRequestsUsed 
+      });
 
       return {
         id: apiKey.id,
         userId: apiKey.userId,
         keyName: apiKey.keyName,
         isActive: apiKey.isActive,
-        requestsUsed: requestsUsed + 1,
+        requestsUsed: newRequestsUsed,
         requestsLimit: requestsLimit,
       };
     } catch (error) {
+      console.error('Error in validateAndIncrementUsage:', error);
       throw error;
     }
   }

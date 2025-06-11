@@ -49,11 +49,6 @@ import { Loader } from "@/components/ui/loader"
 // Navigation items 
 const navItems = [
   {
-    title: "Dashboard",
-    url: "/dashboard",
-    icon: Home,
-  },
-  {
     title: "Anime",
     url: "/dashboard/anime",
     icon: Film,
@@ -64,19 +59,9 @@ const navItems = [
     icon: Video,
   },
   {
-    title: "Analytics",
-    url: "/dashboard/analytics",
-    icon: BarChart3,
-  },
-  {
-    title: "Users",
-    url: "/dashboard/users",
-    icon: Users,
-  },
-  {
-    title: "Settings",
-    url: "/dashboard/settings",
-    icon: Settings,
+    title: "KM Movies",
+    url: "/dashboard/kmmovies",
+    icon: Video,
   },
   {
     title: "API Keys",

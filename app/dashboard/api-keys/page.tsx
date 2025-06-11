@@ -10,8 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Key, Plus, Trash2, Eye, EyeOff, Copy, User } from 'lucide-react';
+import { Loader2, Key, Plus, Trash2, Eye, EyeOff, Copy, User, Check } from 'lucide-react';
 import { ApiKey } from '@/lib/db/schema';
+import { toast } from 'sonner';
 
 export default function ApiKeysPage() {
   const { user } = useAuth();
@@ -24,6 +25,7 @@ export default function ApiKeysPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [error, setError] = useState('');
   const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
+  const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -41,13 +43,20 @@ export default function ApiKeysPage() {
 
       if (data.success) {
         setApiKeys(data.apiKeys || []);
-        // Use user data with proper fallbacks to avoid NaN
-        setUserRequestsUsed(Number(data.user?.requestsUsed) || 0);
-        setUserRequestsLimit(Number(data.user?.requestsLimit) || 1000);
+        // Fix: Use the correct data structure from API response
+        setUserRequestsUsed(Number(data.userRequestsUsed) || 0);
+        setUserRequestsLimit(Number(data.userRequestsLimit) || 1000);
+        
+        console.log('API Keys data:', {
+          requestsUsed: data.userRequestsUsed,
+          requestsLimit: data.userRequestsLimit,
+          user: data.user
+        });
       } else {
         setError(data.error || 'Failed to fetch API keys');
       }
     } catch (error) {
+      console.error('Error fetching API keys:', error);
       setError('Failed to fetch API keys');
     } finally {
       setLoading(false);
@@ -116,8 +125,24 @@ export default function ApiKeysPage() {
     setVisibleKeys(newVisibleKeys);
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
+  const copyToClipboard = async (text: string, keyId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedKeyId(keyId);
+      setTimeout(() => setCopiedKeyId(null), 2000);
+      
+      // Show success toast
+      toast.success('API key copied successfully!', {
+        description: 'The API key has been copied to your clipboard.',
+      });
+    } catch (error) {
+      console.error('Failed to copy:', error);
+      
+      // Show error toast
+      toast.error('Failed to copy API key', {
+        description: 'Please try again or copy manually.',
+      });
+    }
   };
 
   const formatKeyValue = (keyValue: string, keyId: string) => {
@@ -294,10 +319,14 @@ export default function ApiKeysPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => copyToClipboard(apiKey.keyValue)}
+                              onClick={() => copyToClipboard(apiKey.keyValue, apiKey.id)}
                               className="h-8 w-8 p-0"
                             >
-                              <Copy className="w-4 h-4" />
+                              {copiedKeyId === apiKey.id ? (
+                                <Check className="w-4 h-4 text-green-500" />
+                              ) : (
+                                <Copy className="w-4 h-4" />
+                              )}
                             </Button>
                           </div>
                         </TableCell>

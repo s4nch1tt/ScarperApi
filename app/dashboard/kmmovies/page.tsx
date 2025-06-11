@@ -3,39 +3,26 @@
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useCallback } from "react"
-import {
-  Home,
-  Settings,
-  Users,
-  BarChart3,
-  FileText,
-  LogOut,
-  User,
-  Film,
-  Search,
-  X,
-  Video
-} from "lucide-react"
+import { Search, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Image from "next/image"
-import { DashboardNavbar } from "../layout"
 
 // Interface for the API response
-interface MoviePost {
+interface KMMoviePost {
+  id: string
   imageUrl: string
   title: string
   postUrl: string
+  isSeries: boolean
+  type: string
 }
 
 interface ApiResponse {
   success: boolean
   count: number
-  posts: MoviePost[]
+  posts: KMMoviePost[]
 }
-
-// Navigation items
-
 
 function Navbar({ 
   searchQuery, 
@@ -55,7 +42,7 @@ function Navbar({
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search movies..."
+              placeholder="Search KM movies..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               className="pl-10 pr-10 w-full"
@@ -92,7 +79,7 @@ function useDebounce(value: string, delay: number) {
   return debouncedValue
 }
 
-function MoviesGrid({ posts, searchQuery, isSearching }: { posts: MoviePost[], searchQuery: string, isSearching: boolean }) {
+function MoviesGrid({ posts, searchQuery, isSearching }: { posts: KMMoviePost[], searchQuery: string, isSearching: boolean }) {
   // Filter posts based on search query
   const filteredPosts = posts.filter(post =>
     post.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -123,13 +110,12 @@ function MoviesGrid({ posts, searchQuery, isSearching }: { posts: MoviePost[], s
       {filteredPosts.map((post, index) => {
         // Extract the ID from the URL for our internal routing
         const urlParts = post.postUrl.split('/');
-        // The ID is the second-to-last part in the URL
-        const id = urlParts[urlParts.length - 2] || '';
+        const id = urlParts[urlParts.length - 2] || post.id;
         
         return (
           <a 
             key={index}
-            href={`/dashboard/movies/${id}`}
+            href={`/dashboard/kmmovies/${id}`}
             className="transition-transform hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-primary rounded-lg overflow-hidden"
           >
             <div className="overflow-hidden flex flex-col">
@@ -142,6 +128,13 @@ function MoviesGrid({ posts, searchQuery, isSearching }: { posts: MoviePost[], s
                   sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw"
                   quality={80}
                 />
+                {post.isSeries && (
+                  <div className="absolute top-2 left-2">
+                    <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                      Series
+                    </span>
+                  </div>
+                )}
               </div>
               <h3 className="text-center font-medium mt-1 sm:mt-2 text-[10px] sm:text-xs md:text-sm line-clamp-1 sm:line-clamp-2">{post.title}</h3>
             </div>
@@ -152,11 +145,11 @@ function MoviesGrid({ posts, searchQuery, isSearching }: { posts: MoviePost[], s
   )
 }
 
-export default function MoviesDashboard() {
+export default function KMMoviesDashboard() {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
-  const [movies, setMovies] = useState<MoviePost[]>([])
-  const [allMovies, setAllMovies] = useState<MoviePost[]>([]) // Store original data
+  const [movies, setMovies] = useState<KMMoviePost[]>([])
+  const [allMovies, setAllMovies] = useState<KMMoviePost[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
@@ -186,11 +179,11 @@ export default function MoviesDashboard() {
       }
       
       const queryString = params.toString()
-      const url = `/api/moviesdrive${queryString ? `?${queryString}` : ''}`
+      const url = `/api/kmmovies${queryString ? `?${queryString}` : ''}`
       
       const res = await fetch(url, {
         headers: {
-          'x-api-key': 'ak_33ec1317f28b9126487af7639c7aab16e813d4064972829d' // This should come from user's API keys
+          'x-api-key': process.env.NEXT_PUBLIC_TOTU_API_KEY || 'ak_33ec1317f28b9126487af7639c7aab16e813d4064972829d'
         }
       })
       const data: ApiResponse = await res.json()
@@ -198,13 +191,13 @@ export default function MoviesDashboard() {
       if (data.success) {
         setMovies(data.posts)
         if (!search.trim()) {
-          setAllMovies(data.posts) // Only update all movies when not searching
+          setAllMovies(data.posts)
         }
       } else {
         if (res.status === 401) {
           setError("API key required. Please create an API key in the API Keys section.")
         } else {
-          setError(data.error || "Failed to fetch movie data")
+          setError("Failed to fetch movie data")
         }
       }
     } catch (err) {
@@ -225,7 +218,6 @@ export default function MoviesDashboard() {
   // Handle search functionality
   const performSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
-      // If search is empty, fetch default data
       fetchMovies(currentPage)
       setIsSearching(false)
       return
@@ -236,9 +228,9 @@ export default function MoviesDashboard() {
       const params = new URLSearchParams()
       params.append('search', query.trim())
       
-      const res = await fetch(`/api/moviesdrive?${params.toString()}`, {
+      const res = await fetch(`/api/kmmovies?${params.toString()}`, {
         headers: {
-          'x-api-key': process.env.NEXT_PUBLIC_TOTU_API_KEY !
+          'x-api-key': process.env.NEXT_PUBLIC_TOTU_API_KEY || 'ak_33ec1317f28b9126487af7639c7aab16e813d4064972829d'
         }
       })
       const data: ApiResponse = await res.json()
@@ -262,7 +254,7 @@ export default function MoviesDashboard() {
 
   // Effect for debounced search
   useEffect(() => {
-    if (allMovies.length > 0) { // Only search if we have loaded initial data
+    if (allMovies.length > 0) {
       performSearch(debouncedSearchQuery)
     }
   }, [debouncedSearchQuery, performSearch, allMovies.length])
@@ -291,7 +283,6 @@ export default function MoviesDashboard() {
         onSearchChange={setSearchQuery}
       />
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0 overflow-y-auto">
-        {/* Removed the duplicate title since it's now in the Navbar */}
         
         {loading && movies.length === 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5 lg:gap-6 mt-6">

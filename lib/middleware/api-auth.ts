@@ -26,20 +26,20 @@ export async function validateApiKey(request: Request): Promise<ApiKeyValidation
       };
     }
 
-    // Validate the API key and increment user usage
+    // Validate the API key AND increment user usage in one call
     const keyData = await ApiKeyService.validateAndIncrementUsage(apiKey);
     
     if (!keyData) {
-      console.log('API key validation failed: Invalid key');
+      console.log('API key validation failed: Invalid key or limit exceeded');
       return {
         isValid: false,
-        error: 'Invalid API key. Please check your API key and try again.'
+        error: 'Invalid API key or request limit exceeded. Please check your API key and usage limits.'
       };
     }
 
     const remainingRequests = Math.max(0, (keyData.requestsLimit || 1000) - (keyData.requestsUsed || 0));
 
-    console.log('API key validation successful:', { 
+    console.log('API key validation successful and usage incremented:', { 
       keyName: keyData.keyName,
       remainingRequests: remainingRequests,
       requestsUsed: keyData.requestsUsed,

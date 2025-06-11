@@ -295,7 +295,7 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
         // Fetch movie details using our API
         const res = await fetch(`/api/moviesdrive/episode?url=${encodeURIComponent(fullUrl)}`, {
           headers: {
-            'x-api-key': 'ak_33ec1317f28b9126487af7639c7aab16e813d4064972829d' // This should come from user's API keys
+          'x-api-key': process.env.NEXT_PUBLIC_TOTU_API_KEY !
           }
         })
         const data: ApiResponse = await res.json()

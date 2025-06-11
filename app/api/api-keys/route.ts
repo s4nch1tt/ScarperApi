@@ -25,18 +25,19 @@ export async function GET(request: Request) {
 
     const apiKeys = await ApiKeyService.getUserApiKeys(userId);
 
-    // Add user request info to each API key for display
-    const apiKeysWithUserInfo = apiKeys.map(key => ({
-      ...key,
-      requestsUsed: user.requestsUsed,
-      requestsLimit: user.requestsLimit,
-    }));
+    // Ensure user data has proper defaults
+    const userRequestsUsed = Number(user.requestsUsed) || 0;
+    const userRequestsLimit = Number(user.requestsLimit) || 1000;
 
     return NextResponse.json({
       success: true,
-      apiKeys: apiKeysWithUserInfo,
-      userRequestsUsed: user.requestsUsed,
-      userRequestsLimit: user.requestsLimit,
+      apiKeys: apiKeys,
+      user: {
+        requestsUsed: userRequestsUsed,
+        requestsLimit: userRequestsLimit,
+      },
+      userRequestsUsed: userRequestsUsed,
+      userRequestsLimit: userRequestsLimit,
     });
   } catch (error) {
     console.error('Error fetching API keys:', error);
