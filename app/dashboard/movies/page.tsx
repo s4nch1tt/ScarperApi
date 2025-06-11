@@ -35,33 +35,7 @@ interface ApiResponse {
 }
 
 // Navigation items
-const navItems = [
-  {
-    title: "Anime",
-    url: "/dashboard/anime",
-    icon: Film,
-  },
-  {
-    title: "Movies",
-    url: "/dashboard/movies",
-    icon: Video,
-  },
-  {
-    title: "Analytics",
-    url: "/dashboard/analytics",
-    icon: BarChart3,
-  },
-  {
-    title: "Users",
-    url: "/dashboard/users",
-    icon: Users,
-  },
-  {
-    title: "Settings",
-    url: "/dashboard/settings",
-    icon: Settings,
-  },
-]
+
 
 function Navbar({ 
   searchQuery, 
@@ -71,29 +45,33 @@ function Navbar({
   onSearchChange: (query: string) => void,
 }) {
   return (
-    <DashboardNavbar>
-      <div className="flex items-center gap-4 flex-1">
-        {/* Search Bar */}
-        <div className="relative flex-1 max-w-sm md:max-w-md lg:max-w-lg">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Search movies..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10 pr-10 w-full"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => onSearchChange("")}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
+    <div className="border-b">
+      <div className="flex h-16 items-center px-4">
+        <div className="flex items-center gap-4 flex-1">
+          <div className="flex items-center space-x-4">
+          </div>
+          {/* Search Bar */}
+          <div className="relative flex-1 max-w-sm md:max-w-md lg:max-w-lg">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search movies..."
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="pl-10 pr-10 w-full"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => onSearchChange("")}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
-    </DashboardNavbar>
+    </div>
   )
 }
 
@@ -297,9 +275,7 @@ export default function MoviesDashboard() {
         onSearchChange={setSearchQuery}
       />
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0 overflow-y-auto">
-        <div className="flex justify-between items-center mt-2">
-          <h1 className="text-2xl font-bold">Movies & TV Shows</h1>
-        </div>
+        {/* Removed the duplicate title since it's now in the Navbar */}
         
         {loading && movies.length === 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5 lg:gap-6 mt-6">
