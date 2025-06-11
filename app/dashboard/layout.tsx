@@ -45,6 +45,7 @@ import {
 import { signOut } from "@/lib/auth"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Loader } from "@/components/ui/loader"
+import { Toaster } from "@/components/ui/sonner"
 
 // Navigation items 
 const navItems = [
@@ -275,6 +276,7 @@ export default function DashboardLayout({
         <DashboardNavbar />
         {children}
       </SidebarInset>
+      <Toaster />
     </SidebarProvider>
   )
 }

@@ -6,10 +6,11 @@ export const usersTable = pgTable("users", {
   email: varchar({ length: 255 }).notNull().unique(),
   displayName: varchar({ length: 255 }),
   photoURL: text(),
-  provider: varchar({ length: 50 }).notNull(),
+  provider: varchar({ length: 50 }).default('google').notNull(),
   requestsUsed: integer().default(0).notNull(),
   requestsLimit: integer().default(1000).notNull(),
   createdAt: timestamp().defaultNow().notNull(),
+  lastLoginAt: timestamp(),
   updatedAt: timestamp().defaultNow().notNull(),
 });
 
