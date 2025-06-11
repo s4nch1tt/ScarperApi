@@ -1,84 +1,83 @@
 import { db } from '@/lib/db';
-import { usersTable, type NewUser, type User } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import type { User as FirebaseUser } from 'firebase/auth';
+import { usersTable } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm/sql/expressions/conditions';
 
 export class UserService {
-  static async createOrUpdateUser(firebaseUser: FirebaseUser, provider: string): Promise<User> {
+  static async createOrUpdateUser(firebaseUser: any, provider: string) {
     try {
       // Check if user already exists
-      const existingUser = await db
-        .select()
-        .from(usersTable)
-        .where(eq(usersTable.uid, firebaseUser.uid))
-        .limit(1);
-
-      if (existingUser.length > 0) {
+      const existingUser = await this.getUserByUid(firebaseUser.uid);
+      
+      if (existingUser) {
         // Update existing user
         const [updatedUser] = await db
           .update(usersTable)
           .set({
-            email: firebaseUser.email || '',
+            email: firebaseUser.email,
             displayName: firebaseUser.displayName,
             photoURL: firebaseUser.photoURL,
+            provider,
             updatedAt: new Date(),
           })
           .where(eq(usersTable.uid, firebaseUser.uid))
           .returning();
-
+        
         return updatedUser;
       } else {
         // Create new user
-        const newUser: NewUser = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email || '',
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL,
-          provider,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-
-        const [createdUser] = await db
+        const [newUser] = await db
           .insert(usersTable)
-          .values(newUser)
+          .values({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            provider,
+            requestsUsed: 0,
+            requestsLimit: 1000,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          })
           .returning();
-
-        return createdUser;
+        
+        return newUser;
       }
     } catch (error) {
       console.error('Error creating/updating user:', error);
-      throw new Error('Failed to save user to database');
+      throw new Error('Failed to create or update user');
     }
   }
 
-  static async getUserByUid(uid: string): Promise<User | null> {
+  static async getUserByUid(uid: string) {
     try {
-      const users = await db
+      const [user] = await db
         .select()
         .from(usersTable)
         .where(eq(usersTable.uid, uid))
         .limit(1);
-
-      return users.length > 0 ? users[0] : null;
+      
+      return user || null;
     } catch (error) {
-      console.error('Error fetching user:', error);
-      return null;
+      console.error('Error fetching user by uid:', error);
+      throw new Error('Failed to fetch user');
     }
   }
 
-  static async getUserByEmail(email: string): Promise<User | null> {
+  static async incrementUserRequests(uid: string) {
     try {
-      const users = await db
-        .select()
-        .from(usersTable)
-        .where(eq(usersTable.email, email))
-        .limit(1);
-
-      return users.length > 0 ? users[0] : null;
+      const [updatedUser] = await db
+        .update(usersTable)
+        .set({
+          requestsUsed: usersTable.requestsUsed + 1,
+          updatedAt: new Date(),
+        })
+        .where(eq(usersTable.uid, uid))
+        .returning();
+      
+      return updatedUser;
     } catch (error) {
-      console.error('Error fetching user by email:', error);
-      return null;
+      console.error('Error incrementing user requests:', error);
+      throw new Error('Failed to increment user requests');
     }
   }
 }

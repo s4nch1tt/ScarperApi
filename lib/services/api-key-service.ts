@@ -1,6 +1,7 @@
-import { db } from '@/lib/db/index';
+import { db } from '@/lib/db';
 import { apiKeysTable, usersTable } from '@/lib/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm/sql/expressions/conditions';
+import { sql } from 'drizzle-orm/sql';
 import { generateApiKey } from '@/lib/utils/api-key-generator';
 
 export class ApiKeyService {
@@ -9,7 +10,7 @@ export class ApiKeyService {
       const keyValue = generateApiKey();
       
       const newApiKey = {
-        userId, // This is now a Firebase UID (string)
+        userId,
         keyName,
         keyValue,
         isActive: true,
@@ -21,7 +22,7 @@ export class ApiKeyService {
         .insert(apiKeysTable)
         .values(newApiKey)
         .returning();
-      
+
       return createdApiKey;
     } catch (error) {
       console.error('Error creating API key:', error);
@@ -35,7 +36,7 @@ export class ApiKeyService {
         .select()
         .from(apiKeysTable)
         .where(eq(apiKeysTable.userId, userId));
-      
+
       return apiKeys;
     } catch (error) {
       console.error('Error fetching API keys:', error);
@@ -53,7 +54,7 @@ export class ApiKeyService {
             eq(apiKeysTable.userId, userId)
           )
         );
-      
+
       return true;
     } catch (error) {
       console.error('Error deleting API key:', error);
@@ -115,7 +116,7 @@ export class ApiKeyService {
       // Check if user usage limit is exceeded
       const requestsUsed = Number(apiKey.userRequestsUsed) || 0;
       const requestsLimit = Number(apiKey.userRequestsLimit) || 1000;
-      
+
       if (requestsUsed >= requestsLimit) {
         console.log('Request limit exceeded:', { requestsUsed, requestsLimit });
         return null;
@@ -126,15 +127,16 @@ export class ApiKeyService {
       await db
         .update(usersTable)
         .set({
-          requestsUsed: sql`COALESCE(${usersTable.requestsUsed}, 0) + 1`
+          requestsUsed: sql`COALESCE(${usersTable.requestsUsed}, 0) + 1`,
         })
         .where(eq(usersTable.uid, apiKey.userId));
 
       const newRequestsUsed = requestsUsed + 1;
-      console.log('Usage incremented successfully:', { 
-        userId: apiKey.userId, 
-        oldCount: requestsUsed, 
-        newCount: newRequestsUsed 
+
+      console.log('Usage incremented successfully:', {
+        userId: apiKey.userId,
+        oldCount: requestsUsed,
+        newCount: newRequestsUsed,
       });
 
       return {
