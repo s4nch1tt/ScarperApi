@@ -2,15 +2,16 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Copy, Play, Key, Code2, ExternalLink, Home, Search, Film ,Video} from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Copy, Play, Key, Code2, ExternalLink, Home, Search, Film, Video, FileVideo } from "lucide-react";
 import { toast } from "sonner";
+import MoviesDocs from "@/components/ui/movies-docs";
 
 interface ApiEndpoint {
   method: string;
@@ -91,6 +92,7 @@ export default function DocsPage() {
   const [testParams, setTestParams] = useState<Record<string, string>>({});
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
+  const [selectedApiType, setSelectedApiType] = useState("anime");
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -343,370 +345,404 @@ curl -X GET \\
   };
 
   return (
-    <div className="container mx-auto py-4 px-4 sm:py-6 space-y-4 sm:space-y-6">
+    <div className="container mx-auto py-4 px-4 sm:py-6 space-y-4 sm:space-y-6 max-w-full overflow-x-hidden">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">API Documentation</h1>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl sm:text-3xl font-bold truncate">API Documentation</h1>
           <p className="text-muted-foreground text-sm sm:text-base">
-            Test and explore our Anime API endpoints
+            Test and explore our Anime & Movies API endpoints
           </p>
         </div>
-        <Badge variant="secondary" className="flex items-center gap-2 text-xs sm:text-sm">
-          <Key className="h-3 w-3 sm:h-4 sm:w-4" />
-          API v1.0
-        </Badge>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 shrink-0">
+          <div className="flex flex-col gap-2 w-full sm:w-auto">
+            <Label className="text-xs text-muted-foreground">Select API Type</Label>
+            <Select value={selectedApiType} onValueChange={setSelectedApiType}>
+              <SelectTrigger className="w-full sm:w-40 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="anime" className="text-sm">
+                  <div className="flex items-center gap-2">
+                    <Video className="h-4 w-4" />
+                    Anime API
+                  </div>
+                </SelectItem>
+                <SelectItem value="movies" className="text-sm">
+                  <div className="flex items-center gap-2">
+                    <FileVideo className="h-4 w-4" />
+                    Movies API
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {/* <Badge variant="secondary" className="flex items-center gap-2 text-xs sm:text-sm shrink-0">
+            <Key className="h-3 w-3 sm:h-4 sm:w-4" />
+            API v1.0
+          </Badge> */}
+        </div>
       </div>
 
-      <Tabs defaultValue="test" className="space-y-4 sm:space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="test" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-            <Play className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden xs:inline">API Testing</span>
-            <span className="xs:hidden">Testing</span>
-          </TabsTrigger>
-          <TabsTrigger value="docs" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-            <Code2 className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden xs:inline">Code Examples</span>
-            <span className="xs:hidden">Examples</span>
-          </TabsTrigger>
-        </TabsList>
+      {selectedApiType === "anime" ? (
+        <Tabs defaultValue="test" className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="test" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Play className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">API Testing</span>
+              <span className="xs:hidden">Testing</span>
+            </TabsTrigger>
+            <TabsTrigger value="docs" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Code2 className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Code Examples</span>
+              <span className="xs:hidden">Examples</span>
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="test" className="space-y-4 sm:space-y-6">
-          <Card>
-            <CardHeader className="pb-4 sm:pb-6">
-              <CardTitle className="text-lg sm:text-xl">API Key Setup</CardTitle>
-              <CardDescription className="text-sm">
-                Enter your API key to test the endpoints. Get your API key from the{" "}
-                <a href="/dashboard/api-keys" className="text-primary hover:underline">
-                  API Keys page
-                </a>
-                .
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Input
-                  type="password"
-                  placeholder="Enter your API key"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  className="flex-1 text-sm"
-                />
-                <Button variant="outline" size="icon" onClick={() => copyToClipboard(apiKey)} className="shrink-0 self-start sm:self-auto">
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          <TabsContent value="test" className="space-y-4 sm:space-y-6">
             <Card>
               <CardHeader className="pb-4 sm:pb-6">
-                <CardTitle className="text-lg sm:text-xl">API Categories</CardTitle>
-                <CardDescription className="text-sm">Select a category and endpoint to test</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 sm:space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-sm">Category</Label>
-                  <Select value={selectedCategory.name} onValueChange={handleCategoryChange}>
-                    <SelectTrigger className="text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {apiCategories.map((category) => (
-                        <SelectItem key={category.name} value={category.name} className="text-sm">
-                          <div className="flex items-center gap-2">
-                            {category.icon}
-                            {category.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm">Endpoint</Label>
-                  <Select value={selectedEndpoint.endpoint} onValueChange={handleEndpointChange}>
-                    <SelectTrigger className="text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {selectedCategory.endpoints.map((endpoint) => (
-                        <SelectItem key={endpoint.endpoint} value={endpoint.endpoint} className="text-sm">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <Badge variant={endpoint.method === "GET" ? "default" : "secondary"} className="text-xs">
-                                {endpoint.method}
-                              </Badge>
-                              <code className="text-xs break-all">{endpoint.endpoint}</code>
-                            </div>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="p-3 bg-muted rounded-lg">
-                  <p className="text-xs sm:text-sm text-muted-foreground">{selectedEndpoint.description}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-4 sm:pb-6">
-                <CardTitle className="text-lg sm:text-xl">Parameters</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">API Key Setup</CardTitle>
                 <CardDescription className="text-sm">
-                  Configure parameters for <code className="text-xs break-all">{selectedEndpoint.endpoint}</code>
+                  Enter your API key to test the endpoints. Get your API key from the{" "}
+                  <a href="/dashboard/api-keys" className="text-primary hover:underline">
+                    API Keys page
+                  </a>
+                  .
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 sm:space-y-4">
-                {selectedEndpoint.params && selectedEndpoint.params.length > 0 ? (
-                  selectedEndpoint.params.map((param) => (
-                    <div key={param.name} className="space-y-2">
-                      <Label htmlFor={param.name} className="flex flex-wrap items-center gap-2 text-sm">
-                        {param.name}
-                        <Badge variant={param.required ? "destructive" : "secondary"} className="text-xs">
-                          {param.required ? "Required" : "Optional"}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">({param.type})</span>
-                      </Label>
-                      <Input
-                        id={param.name}
-                        placeholder={param.description}
-                        value={testParams[param.name] || ""}
-                        onChange={(e) => setTestParams({ ...testParams, [param.name]: e.target.value })}
-                        className="text-sm"
-                      />
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">No parameters required</p>
-                )}
-
-                <Button onClick={testApi} disabled={loading} className="w-full text-sm">
-                  {loading ? "Testing..." : "Test API"}
-                </Button>
+              <CardContent>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Input
+                    type="password"
+                    placeholder="Enter your API key"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    className="flex-1 text-sm min-w-0"
+                  />
+                  <Button variant="outline" size="icon" onClick={() => copyToClipboard(apiKey)} className="shrink-0 self-start sm:self-auto">
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
-          </div>
 
-          <Card>
-            <CardHeader className="pb-4 sm:pb-6">
-              <CardTitle className="text-lg sm:text-xl">Response</CardTitle>
-              <CardDescription className="text-sm">API response will appear here</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                placeholder="API response will appear here..."
-                value={response}
-                readOnly
-                className="min-h-[200px] sm:min-h-[300px] font-mono text-xs sm:text-sm"
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              <Card>
+                <CardHeader className="pb-4 sm:pb-6">
+                  <CardTitle className="text-lg sm:text-xl">API Categories</CardTitle>
+                  <CardDescription className="text-sm">Select a category and endpoint to test</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3 sm:space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm">Category</Label>
+                    <Select value={selectedCategory.name} onValueChange={handleCategoryChange}>
+                      <SelectTrigger className="text-sm w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {apiCategories.map((category) => (
+                          <SelectItem key={category.name} value={category.name} className="text-sm">
+                            <div className="flex items-center gap-2">
+                              {category.icon}
+                              <span className="truncate">{category.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-        <TabsContent value="docs" className="space-y-4 sm:space-y-6">
-          <Card>
-            <CardHeader className="pb-4 sm:pb-6">
-              <CardTitle className="text-lg sm:text-xl">API Usage Examples</CardTitle>
-              <CardDescription className="text-sm">
-                Code examples for integrating with our Anime API
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 sm:space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm">Category</Label>
-                  <Select value={selectedCategory.name} onValueChange={handleCategoryChange}>
-                    <SelectTrigger className="text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {apiCategories.map((category) => (
-                        <SelectItem key={category.name} value={category.name} className="text-sm">
-                          <div className="flex items-center gap-2">
-                            {category.icon}
-                            {category.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Endpoint</Label>
+                    <Select value={selectedEndpoint.endpoint} onValueChange={handleEndpointChange}>
+                      <SelectTrigger className="text-sm w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {selectedCategory.endpoints.map((endpoint) => (
+                          <SelectItem key={endpoint.endpoint} value={endpoint.endpoint} className="text-sm">
+                            <div className="space-y-1 min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <Badge variant={endpoint.method === "GET" ? "default" : "secondary"} className="text-xs shrink-0">
+                                  {endpoint.method}
+                                </Badge>
+                                <code className="text-xs truncate min-w-0">{endpoint.endpoint}</code>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-xs sm:text-sm text-muted-foreground break-words">{selectedEndpoint.description}</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-4 sm:pb-6">
+                  <CardTitle className="text-lg sm:text-xl">Parameters</CardTitle>
+                  <CardDescription className="text-sm">
+                    Configure parameters for <code className="text-xs break-all">{selectedEndpoint.endpoint}</code>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3 sm:space-y-4">
+                  {selectedEndpoint.params && selectedEndpoint.params.length > 0 ? (
+                    selectedEndpoint.params.map((param) => (
+                      <div key={param.name} className="space-y-2">
+                        <Label htmlFor={param.name} className="flex flex-wrap items-center gap-2 text-sm">
+                          <span className="break-words">{param.name}</span>
+                          <Badge variant={param.required ? "destructive" : "secondary"} className="text-xs shrink-0">
+                            {param.required ? "Required" : "Optional"}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground shrink-0">({param.type})</span>
+                        </Label>
+                        <Input
+                          id={param.name}
+                          placeholder={param.description}
+                          value={testParams[param.name] || ""}
+                          onChange={(e) => setTestParams({ ...testParams, [param.name]: e.target.value })}
+                          className="text-sm w-full min-w-0"
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No parameters required</p>
+                  )}
+
+                  <Button onClick={testApi} disabled={loading} className="w-full text-sm">
+                    {loading ? "Testing..." : "Test API"}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader className="pb-4 sm:pb-6">
+                <CardTitle className="text-lg sm:text-xl">Response</CardTitle>
+                <CardDescription className="text-sm">API response will appear here</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="w-full overflow-hidden">
+                  <Textarea
+                    placeholder="API response will appear here..."
+                    value={response}
+                    readOnly
+                    className="min-h-[200px] sm:min-h-[300px] font-mono text-xs sm:text-sm w-full resize-none"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="docs" className="space-y-4 sm:space-y-6">
+            <Card>
+              <CardHeader className="pb-4 sm:pb-6">
+                <CardTitle className="text-lg sm:text-xl">API Usage Examples</CardTitle>
+                <CardDescription className="text-sm">
+                  Code examples for integrating with our Anime API
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="space-y-2 min-w-0">
+                    <Label className="text-sm">Category</Label>
+                    <Select value={selectedCategory.name} onValueChange={handleCategoryChange}>
+                      <SelectTrigger className="text-sm w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {apiCategories.map((category) => (
+                          <SelectItem key={category.name} value={category.name} className="text-sm">
+                            <div className="flex items-center gap-2">
+                              {category.icon}
+                              <span className="truncate">{category.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2 min-w-0">
+                    <Label className="text-sm">Endpoint</Label>
+                    <Select value={selectedEndpoint.endpoint} onValueChange={handleEndpointChange}>
+                      <SelectTrigger className="text-sm w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {selectedCategory.endpoints.map((endpoint) => (
+                          <SelectItem key={endpoint.endpoint} value={endpoint.endpoint} className="text-sm">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Badge variant={endpoint.method === "GET" ? "default" : "secondary"} className="text-xs shrink-0">
+                                {endpoint.method}
+                              </Badge>
+                              <code className="text-xs truncate min-w-0">{endpoint.endpoint}</code>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-sm">Endpoint</Label>
-                  <Select value={selectedEndpoint.endpoint} onValueChange={handleEndpointChange}>
-                    <SelectTrigger className="text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {selectedCategory.endpoints.map((endpoint) => (
-                        <SelectItem key={endpoint.endpoint} value={endpoint.endpoint} className="text-sm">
-                          <div className="flex items-center gap-2">
-                            <Badge variant={endpoint.method === "GET" ? "default" : "secondary"} className="text-xs">
-                              {endpoint.method}
-                            </Badge>
-                            <code className="text-xs break-all">{endpoint.endpoint}</code>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                <Tabs defaultValue="javascript" className="space-y-4">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="javascript" className="text-xs sm:text-sm">JavaScript</TabsTrigger>
+                    <TabsTrigger value="python" className="text-xs sm:text-sm">Python</TabsTrigger>
+                    <TabsTrigger value="curl" className="text-xs sm:text-sm">cURL</TabsTrigger>
+                  </TabsList>
 
-              <Tabs defaultValue="javascript" className="space-y-4">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="javascript" className="text-xs sm:text-sm">JavaScript</TabsTrigger>
-                  <TabsTrigger value="python" className="text-xs sm:text-sm">Python</TabsTrigger>
-                  <TabsTrigger value="curl" className="text-xs sm:text-sm">cURL</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="javascript">
-                  <div className="relative">
-                    <div className="bg-[#1e1e1e] rounded-lg overflow-hidden border border-gray-800">
-                      {/* VS Code-like header */}
-                      <div className="flex items-center justify-between bg-[#2d2d30] px-4 py-2 border-b border-gray-700">
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1.5">
-                            <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
-                            <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
-                            <div className="w-3 h-3 rounded-full bg-[#27ca3f]"></div>
+                  <TabsContent value="javascript">
+                    <div className="relative w-full overflow-hidden">
+                      <div className="bg-[#1e1e1e] rounded-lg overflow-hidden border border-gray-800">
+                        {/* VS Code-like header */}
+                        <div className="flex items-center justify-between bg-[#2d2d30] px-4 py-2 border-b border-gray-700">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex gap-1.5 shrink-0">
+                              <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+                              <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+                              <div className="w-3 h-3 rounded-full bg-[#27ca3f]"></div>
+                            </div>
+                            <span className="text-gray-300 text-sm ml-2 truncate">example.js</span>
                           </div>
-                          <span className="text-gray-300 text-sm ml-2">example.js</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-gray-400 hover:text-white hover:bg-gray-700 h-6 px-2 shrink-0"
+                            onClick={() => copyToClipboard(generateCodeExample("javascript"))}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-gray-400 hover:text-white hover:bg-gray-700 h-6 px-2"
-                          onClick={() => copyToClipboard(generateCodeExample("javascript"))}
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
+                        {/* Code content */}
+                        <div className="overflow-x-auto">
+                          <pre className="p-4">
+                            <code className="text-sm text-gray-300 font-mono whitespace-pre-wrap break-words">
+                              {generateCodeExample("javascript")}
+                            </code>
+                          </pre>
+                        </div>
                       </div>
-                      {/* Code content */}
-                      <pre className="p-4 overflow-x-auto">
-                        <code className="text-sm text-gray-300 font-mono">
-                          {generateCodeExample("javascript")}
-                        </code>
-                      </pre>
                     </div>
-                  </div>
-                </TabsContent>
+                  </TabsContent>
 
-                <TabsContent value="python">
-                  <div className="relative">
-                    <div className="bg-[#1e1e1e] rounded-lg overflow-hidden border border-gray-800">
-                      {/* VS Code-like header */}
-                      <div className="flex items-center justify-between bg-[#2d2d30] px-4 py-2 border-b border-gray-700">
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1.5">
-                            <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
-                            <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
-                            <div className="w-3 h-3 rounded-full bg-[#27ca3f]"></div>
+                  <TabsContent value="python">
+                    <div className="relative w-full overflow-hidden">
+                      <div className="bg-[#1e1e1e] rounded-lg overflow-hidden border border-gray-800">
+                        {/* VS Code-like header */}
+                        <div className="flex items-center justify-between bg-[#2d2d30] px-4 py-2 border-b border-gray-700">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex gap-1.5 shrink-0">
+                              <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+                              <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+                              <div className="w-3 h-3 rounded-full bg-[#27ca3f]"></div>
+                            </div>
+                            <span className="text-gray-300 text-sm ml-2 truncate">example.py</span>
                           </div>
-                          <span className="text-gray-300 text-sm ml-2">example.py</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-gray-400 hover:text-white hover:bg-gray-700 h-6 px-2 shrink-0"
+                            onClick={() => copyToClipboard(generateCodeExample("python"))}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-gray-400 hover:text-white hover:bg-gray-700 h-6 px-2"
-                          onClick={() => copyToClipboard(generateCodeExample("python"))}
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
+                        {/* Code content */}
+                        <div className="overflow-x-auto">
+                          <pre className="p-4">
+                            <code className="text-sm text-gray-300 font-mono whitespace-pre-wrap break-words">
+                              {generateCodeExample("python")}
+                            </code>
+                          </pre>
+                        </div>
                       </div>
-                      {/* Code content */}
-                      <pre className="p-4 overflow-x-auto">
-                        <code className="text-sm text-gray-300 font-mono">
-                          {generateCodeExample("python")}
-                        </code>
-                      </pre>
                     </div>
-                  </div>
-                </TabsContent>
+                  </TabsContent>
 
-                <TabsContent value="curl">
-                  <div className="relative">
-                    <div className="bg-[#1e1e1e] rounded-lg overflow-hidden border border-gray-800">
-                      {/* Terminal-like header */}
-                      <div className="flex items-center justify-between bg-[#2d2d30] px-4 py-2 border-b border-gray-700">
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1.5">
-                            <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
-                            <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
-                            <div className="w-3 h-3 rounded-full bg-[#27ca3f]"></div>
+                  <TabsContent value="curl">
+                    <div className="relative w-full overflow-hidden">
+                      <div className="bg-[#1e1e1e] rounded-lg overflow-hidden border border-gray-800">
+                        {/* Terminal-like header */}
+                        <div className="flex items-center justify-between bg-[#2d2d30] px-4 py-2 border-b border-gray-700">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex gap-1.5 shrink-0">
+                              <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+                              <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+                              <div className="w-3 h-3 rounded-full bg-[#27ca3f]"></div>
+                            </div>
+                            <span className="text-gray-300 text-sm ml-2 truncate">terminal</span>
                           </div>
-                          <span className="text-gray-300 text-sm ml-2">terminal</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-gray-400 hover:text-white hover:bg-gray-700 h-6 px-2 shrink-0"
+                            onClick={() => copyToClipboard(generateCodeExample("curl"))}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-gray-400 hover:text-white hover:bg-gray-700 h-6 px-2"
-                          onClick={() => copyToClipboard(generateCodeExample("curl"))}
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
+                        {/* Code content */}
+                        <div className="overflow-x-auto">
+                          <pre className="p-4">
+                            <code className="text-sm text-gray-300 font-mono whitespace-pre-wrap break-words">
+                              {generateCodeExample("curl")}
+                            </code>
+                          </pre>
+                        </div>
                       </div>
-                      {/* Code content */}
-                      <pre className="p-4 overflow-x-auto">
-                        <code className="text-sm text-gray-300 font-mono">
-                          {generateCodeExample("curl")}
-                        </code>
-                      </pre>
                     </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="pb-4 sm:pb-6">
-              <CardTitle className="text-lg sm:text-xl">Response Examples</CardTitle>
-              <CardDescription className="text-sm">Expected response structures for each endpoint</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Tabs defaultValue="home" className="space-y-4">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="home" className="text-xs sm:text-sm">Home Data</TabsTrigger>
-                  <TabsTrigger value="details" className="text-xs sm:text-sm">Anime Details</TabsTrigger>
-                  <TabsTrigger value="streaming" className="text-xs sm:text-sm">Streaming</TabsTrigger>
-                </TabsList>
+            <Card>
+              <CardHeader className="pb-4 sm:pb-6">
+                <CardTitle className="text-lg sm:text-xl">Response Examples</CardTitle>
+                <CardDescription className="text-sm">Expected response structures for each endpoint</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Tabs defaultValue="home" className="space-y-4">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="home" className="text-xs sm:text-sm">Home Data</TabsTrigger>
+                    <TabsTrigger value="details" className="text-xs sm:text-sm">Anime Details</TabsTrigger>
+                    <TabsTrigger value="streaming" className="text-xs sm:text-sm">Streaming</TabsTrigger>
+                  </TabsList>
 
-                <TabsContent value="home">
-                  <div className="relative">
-                    <div className="bg-[#1e1e1e] rounded-lg overflow-hidden border border-gray-800">
-                      {/* VS Code-like header */}
-                      <div className="flex items-center justify-between bg-[#2d2d30] px-4 py-2 border-b border-gray-700">
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1.5">
-                            <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
-                            <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
-                            <div className="w-3 h-3 rounded-full bg-[#27ca3f]"></div>
+                  <TabsContent value="home">
+                    <div className="relative w-full overflow-hidden">
+                      <div className="bg-[#1e1e1e] rounded-lg overflow-hidden border border-gray-800">
+                        {/* VS Code-like header */}
+                        <div className="flex items-center justify-between bg-[#2d2d30] px-4 py-2 border-b border-gray-700">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex gap-1.5 shrink-0">
+                              <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+                              <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+                              <div className="w-3 h-3 rounded-full bg-[#27ca3f]"></div>
+                            </div>
+                            <span className="text-gray-300 text-sm ml-2 truncate">response.json</span>
                           </div>
-                          <span className="text-gray-300 text-sm ml-2">response.json</span>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-gray-400 hover:text-white hover:bg-gray-700 h-6 px-2"
-                          onClick={() => copyToClipboard(`{
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-gray-400 hover:text-white hover:bg-gray-700 h-6 px-2 shrink-0"
+                            onClick={() => copyToClipboard(`{
   "success": true,
   "posts": [...],
   "count": 20
 }`)}
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      </div>
-                      {/* Code content */}
-                      <pre className="p-4 overflow-x-auto text-xs sm:text-sm">
-                        <code className="text-gray-300 font-mono">{`{
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        {/* Code content */}
+                        <div className="overflow-x-auto">
+                          <pre className="p-4 text-xs sm:text-sm">
+                            <code className="text-gray-300 font-mono whitespace-pre-wrap break-words">{`{
   "success": true,
   "count": 20,
   "posts": [
@@ -720,41 +756,43 @@ curl -X GET \\
   "category": "all",
   "source": "category"
 }`}</code>
-                      </pre>
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="details">
-                  <div className="relative">
-                    <div className="bg-[#1e1e1e] rounded-lg overflow-hidden border border-gray-800">
-                      {/* VS Code-like header */}
-                      <div className="flex items-center justify-between bg-[#2d2d30] px-4 py-2 border-b border-gray-700">
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1.5">
-                            <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
-                            <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
-                            <div className="w-3 h-3 rounded-full bg-[#27ca3f]"></div>
-                          </div>
-                          <span className="text-gray-300 text-sm ml-2">episodes.json</span>
+                          </pre>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-gray-400 hover:text-white hover:bg-gray-700 h-6 px-2"
-                          onClick={() => copyToClipboard(`{
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="details">
+                    <div className="relative w-full overflow-hidden">
+                      <div className="bg-[#1e1e1e] rounded-lg overflow-hidden border border-gray-800">
+                        {/* VS Code-like header */}
+                        <div className="flex items-center justify-between bg-[#2d2d30] px-4 py-2 border-b border-gray-700">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex gap-1.5 shrink-0">
+                              <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+                              <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+                              <div className="w-3 h-3 rounded-full bg-[#27ca3f]"></div>
+                            </div>
+                            <span className="text-gray-300 text-sm ml-2 truncate">episodes.json</span>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-gray-400 hover:text-white hover:bg-gray-700 h-6 px-2 shrink-0"
+                            onClick={() => copyToClipboard(`{
   "success": true,
   "animeName": "Blood of Zeus",
   "details": {...},
   "episodes": [...]
 }`)}
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      </div>
-                      {/* Code content */}
-                      <pre className="p-4 overflow-x-auto text-xs sm:text-sm">
-                        <code className="text-gray-300 font-mono">{`{
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        {/* Code content */}
+                        <div className="overflow-x-auto">
+                          <pre className="p-4 text-xs sm:text-sm">
+                            <code className="text-gray-300 font-mono whitespace-pre-wrap break-words">{`{
   "success": true,
   "animeName": "Blood of Zeus",
   "details": {
@@ -786,80 +824,88 @@ curl -X GET \\
     }
   ]
 }`}</code>
-                      </pre>
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="streaming">
-                  <div className="relative">
-                    <div className="bg-[#1e1e1e] rounded-lg overflow-hidden border border-gray-800">
-                      {/* VS Code-like header */}
-                      <div className="flex items-center justify-between bg-[#2d2d30] px-4 py-2 border-b border-gray-700">
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1.5">
-                            <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
-                            <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
-                            <div className="w-3 h-3 rounded-full bg-[#27ca3f]"></div>
-                          </div>
-                          <span className="text-gray-300 text-sm ml-2">stream.json</span>
+                          </pre>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-gray-400 hover:text-white hover:bg-gray-700 h-6 px-2"
-                          onClick={() => copyToClipboard(`{
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="streaming">
+                    <div className="relative w-full overflow-hidden">
+                      <div className="bg-[#1e1e1e] rounded-lg overflow-hidden border border-gray-800">
+                        {/* VS Code-like header */}
+                        <div className="flex items-center justify-between bg-[#2d2d30] px-4 py-2 border-b border-gray-700">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex gap-1.5 shrink-0">
+                              <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+                              <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+                              <div className="w-3 h-3 rounded-full bg-[#27ca3f]"></div>
+                            </div>
+                            <span className="text-gray-300 text-sm ml-2 truncate">stream.json</span>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-gray-400 hover:text-white hover:bg-gray-700 h-6 px-2 shrink-0"
+                            onClick={() => copyToClipboard(`{
   "success": true,
   "securedLink": "https://example.com/stream/video.m3u8"
 }`)}
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      </div>
-                      {/* Code content */}
-                      <pre className="p-4 overflow-x-auto text-xs sm:text-sm">
-                        <code className="text-gray-300 font-mono">{`{
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        {/* Code content */}
+                        <div className="overflow-x-auto">
+                          <pre className="p-4 text-xs sm:text-sm">
+                            <code className="text-gray-300 font-mono whitespace-pre-wrap break-words">{`{
   "success": true,
   "securedLink": "https://example.com/stream/video.m3u8",
   "remainingRequests": 99
 }`}</code>
-                      </pre>
+                          </pre>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="pb-4 sm:pb-6">
-              <CardTitle className="text-lg sm:text-xl">API Workflow</CardTitle>
-              <CardDescription className="text-sm">How to get streaming links for anime episodes</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-3 sm:p-4 bg-muted rounded-lg">
-                <h4 className="font-semibold mb-2 text-sm sm:text-base">Step-by-Step Process</h4>
-                <ol className="text-xs sm:text-sm space-y-2">
-                  <li><strong>1. Get Posts:</strong> Use <code>/api/posts</code> to get anime list</li>
-                  <li><strong>2. Get Episodes:</strong> Use <code>/api/episodes/{`{id}`}</code> with anime ID to get episode details</li>
-                  <li><strong>3. Get Stream Links:</strong> Use <code>/api/video?url={`{episode_link}`}</code> with episode link to get streaming URL</li>
-                </ol>
-                <div className="mt-3 p-2 sm:p-3 bg-blue-100 dark:bg-blue-900/20 rounded-md">
-                  <p className="text-xs text-blue-800 dark:text-blue-200">
-                    <strong>How to extract ID:</strong> From postUrl <code>https://animesalt.cc/series/blood-of-zeus/</code> → use <code>/blood-of-zeus/</code> as the ID parameter.
-                  </p>
+            <Card>
+              <CardHeader className="pb-4 sm:pb-6">
+                <CardTitle className="text-lg sm:text-xl">API Workflow</CardTitle>
+                <CardDescription className="text-sm">How to get streaming links for anime episodes</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-3 sm:p-4 bg-muted rounded-lg">
+                  <h4 className="font-semibold mb-2 text-sm sm:text-base">Step-by-Step Process</h4>
+                  <ol className="text-xs sm:text-sm space-y-2">
+                    <li><strong>1. Get Posts:</strong> Use <code>/api/posts</code> to get anime list</li>
+                    <li><strong>2. Get Episodes:</strong> Use <code>/api/episodes/{`{id}`}</code> with anime ID to get episode details</li>
+                    <li><strong>3. Get Stream Links:</strong> Use <code>/api/video?url={`{episode_link}`}</code> with episode link to get streaming URL</li>
+                  </ol>
+                  <div className="mt-3 p-2 sm:p-3 bg-blue-100 dark:bg-blue-900/20 rounded-md">
+                    <p className="text-xs text-blue-800 dark:text-blue-200">
+                      <strong>How to extract ID:</strong> From postUrl <code>https://animesalt.cc/series/blood-of-zeus/</code> → use <code>/blood-of-zeus/</code> as the ID parameter.
+                    </p>
+                  </div>
+                  <div className="mt-3 p-2 sm:p-3 bg-yellow-100 dark:bg-yellow-900/20 rounded-md">
+                    <p className="text-xs text-yellow-800 dark:text-yellow-200">
+                      <strong>Note:</strong> The episodes endpoint gives you episode links, not streaming links. 
+                      Use the episode link with the video endpoint to get the actual streaming URL.
+                    </p>
+                  </div>
                 </div>
-                <div className="mt-3 p-2 sm:p-3 bg-yellow-100 dark:bg-yellow-900/20 rounded-md">
-                  <p className="text-xs text-yellow-800 dark:text-yellow-200">
-                    <strong>Note:</strong> The episodes endpoint gives you episode links, not streaming links. 
-                    Use the episode link with the video endpoint to get the actual streaming URL.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <div className="w-full overflow-hidden">
+          <MoviesDocs apiKey={apiKey} onApiKeyChange={setApiKey} />
+        </div>
+      )}
     </div>
   );
 }
