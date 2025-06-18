@@ -42,10 +42,20 @@ export async function GET(request: Request) {
       // Search DesireMovies
       fetch(`${request.url.split('/api')[0]}/api/desiremovies?search=${encodeURIComponent(query)}`, {
         headers: { 'x-api-key': request.headers.get('x-api-key') || '' }
+      }).then(res => res.json()).catch(() => ({ success: false, posts: [] })),
+
+      // Search AllMoviesHub
+      fetch(`${request.url.split('/api')[0]}/api/allmovieshub?search=${encodeURIComponent(query)}`, {
+        headers: { 'x-api-key': request.headers.get('x-api-key') || '' }
+      }).then(res => res.json()).catch(() => ({ success: false, posts: [] })),
+
+      // Search 10BitClub
+      fetch(`${request.url.split('/api')[0]}/api/10bitclub?search=${encodeURIComponent(query)}`, {
+        headers: { 'x-api-key': request.headers.get('x-api-key') || '' }
       }).then(res => res.json()).catch(() => ({ success: false, posts: [] }))
     ];
 
-    const [animeResults, moviesResults, kmMoviesResults, desireMoviesResults] = await Promise.all(searchPromises);
+    const [animeResults, moviesResults, kmMoviesResults, desireMoviesResults, allMoviesResults, tenBitClubResults] = await Promise.all(searchPromises);
 
     // Format results for global search
     const formatResults = (results: any, type: string) => {
@@ -78,8 +88,10 @@ export async function GET(request: Request) {
     const movies = formatResults(moviesResults, 'movie');
     const kmmovies = formatResults(kmMoviesResults, 'kmmovie');
     const desiremovies = formatResults(desireMoviesResults, 'desiremovie');
+    const allmovies = formatResults(allMoviesResults, 'allmovie');
+    const tenbitclub = formatResults(tenBitClubResults, '10bitclub');
 
-    const totalResults = anime.count + movies.count + kmmovies.count + desiremovies.count;
+    const totalResults = anime.count + movies.count + kmmovies.count + desiremovies.count + allmovies.count + tenbitclub.count;
 
     return NextResponse.json({
       success: true,
@@ -89,7 +101,9 @@ export async function GET(request: Request) {
         anime,
         movies,
         kmmovies,
-        desiremovies
+        desiremovies,
+        allmovies,
+        tenbitclub
       },
       remainingRequests: authResult.apiKey ? (authResult.apiKey.requestsLimit - authResult.apiKey.requestsUsed - 1) : 0
     });

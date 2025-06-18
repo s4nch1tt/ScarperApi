@@ -136,7 +136,47 @@ async function search10BitClubData(searchQuery: string) {
     const $ = load(html);
     const posts = [];
 
-    // Process search results with same structure
+    // Parse search results from both .result-item and article.item.movies
+    $('.result-item').each((_, element) => {
+      const $element = $(element);
+      const $article = $element.find('article');
+      
+      // Extract image URL
+      let imageUrl = $article.find('.image .thumbnail img').attr('src');
+      imageUrl = normalizeImageUrl(imageUrl);
+      
+      // Extract title and URL
+      const titleElement = $article.find('.details .title a');
+      const title = titleElement.text().trim();
+      const postUrl = titleElement.attr('href');
+      
+      // Extract rating
+      const ratingElement = $article.find('.details .meta .rating');
+      const rating = ratingElement.text().replace('IMDb', '').trim();
+      
+      // Extract year
+      const yearElement = $article.find('.details .meta .year');
+      const yearOrDate = yearElement.text().trim();
+      
+      // Check for TV show indicator
+      const contentTypeSpan = $article.find('.image .thumbnail span');
+      const isTVShow = contentTypeSpan.hasClass('tvshows') || contentTypeSpan.text().includes('TV');
+      
+      if (title && postUrl) {
+        posts.push({
+          imageUrl,
+          title,
+          postUrl,
+          rating: rating || null,
+          year: yearOrDate,
+          quality: null, // Not available in search results
+          featured: false,
+          contentType: isTVShow ? 'TV Show' : 'Movie'
+        });
+      }
+    });
+
+    // Also check for regular movie items in search results
     $('article.item.movies').each((_, element) => {
       const $element = $(element);
       
@@ -164,15 +204,20 @@ async function search10BitClubData(searchQuery: string) {
       const isFeatured = $element.find('.featu').length > 0;
       
       if (title && postUrl) {
-        posts.push({
-          imageUrl,
-          title,
-          postUrl,
-          rating: rating || null,
-          year: yearOrDate,
-          quality: quality || null,
-          featured: isFeatured
-        });
+        // Check if this result is already added from .result-item
+        const existingPost = posts.find(post => post.postUrl === postUrl);
+        if (!existingPost) {
+          posts.push({
+            imageUrl,
+            title,
+            postUrl,
+            rating: rating || null,
+            year: yearOrDate,
+            quality: quality || null,
+            featured: isFeatured,
+            contentType: 'Movie'
+          });
+        }
       }
     });
 

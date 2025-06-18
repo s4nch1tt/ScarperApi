@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Play, Code2, Home, Search, Film, Download, Cloud, Info } from "lucide-react";
+import { Copy, Play, Code2, Home, Search, Film, Download, Star, Clapperboard, Cloud, Info, Link2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface ApiEndpoint {
@@ -26,16 +26,16 @@ interface ApiCategory {
   color: string;
 }
 
-const tenBitClubApiCategories: ApiCategory[] = [
+const desireMoviesApiCategories: ApiCategory[] = [
   {
     name: "Get Movies",
     icon: <Home className="h-4 w-4" />,
-    color: "bg-blue-500",
+    color: "bg-pink-500",
     endpoints: [
       {
         method: "GET",
-        endpoint: "/api/10bitclub",
-        description: "Get all movies and shows with pagination from 10BitClub",
+        endpoint: "/api/desiremovies",
+        description: "Get all movies and shows with pagination from DesireMovies",
         params: [
           { name: "page", type: "number", required: false, description: "Page number for pagination (default: 1)" }
         ]
@@ -45,22 +45,14 @@ const tenBitClubApiCategories: ApiCategory[] = [
   {
     name: "Search Movies",
     icon: <Search className="h-4 w-4" />,
-    color: "bg-green-500",
+    color: "bg-violet-500",
     endpoints: [
       {
         method: "GET",
-        endpoint: "/api/10bitclub",
-        description: "Search movies and shows by title on 10BitClub (general search)",
+        endpoint: "/api/desiremovies",
+        description: "Search movies and shows by title on DesireMovies",
         params: [
           { name: "search", type: "string", required: true, description: "Search query (movie/show title)" }
-        ]
-      },
-      {
-        method: "GET",
-        endpoint: "/api/10bitclub/search",
-        description: "Dedicated search endpoint with detailed results including descriptions",
-        params: [
-          { name: "q", type: "string", required: true, description: "Search query (movie/show title)" }
         ]
       }
     ]
@@ -72,10 +64,25 @@ const tenBitClubApiCategories: ApiCategory[] = [
     endpoints: [
       {
         method: "GET",
-        endpoint: "/api/10bitclub/details",
-        description: "Get detailed movie information including synopsis and HubCloud links",
+        endpoint: "/api/desiremovies/details",
+        description: "Get detailed movie information including synopsis and download links",
         params: [
-          { name: "url", type: "string", required: true, description: "Full movie URL from 10bitclub.xyz (e.g., https://10bitclub.xyz/movie-name/)" }
+          { name: "url", type: "string", required: true, description: "Full movie URL from DesireMovies (e.g., https://desiremovies.cologne/movie-name/)" }
+        ]
+      }
+    ]
+  },
+  {
+    name: "GyanGurus",
+    icon: <Link2 className="h-4 w-4" />,
+    color: "bg-teal-500",
+    endpoints: [
+      {
+        method: "GET",
+        endpoint: "/api/gyanigurus",
+        description: "Extract HubCloud, GDflix, and HubDrive download links from GyanGurus pages",
+        params: [
+          { name: "url", type: "string", required: true, description: "Full GyanGurus page URL (e.g., https://gyanigurus.info/movie-name/)" }
         ]
       }
     ]
@@ -97,7 +104,7 @@ const tenBitClubApiCategories: ApiCategory[] = [
   }
 ];
 
-interface TenBitClubDocsProps {
+interface DesireMoviesDocsProps {
   apiKey: string;
   onApiKeyChange: (key: string) => void;
 }
@@ -152,9 +159,9 @@ const ColorizedJSON = ({ data, title = "Response" }: { data: string; title?: str
   );
 };
 
-export default function TenBitClubDocs({ apiKey, onApiKeyChange }: TenBitClubDocsProps) {
-  const [selectedCategory, setSelectedCategory] = useState(tenBitClubApiCategories[0]);
-  const [selectedEndpoint, setSelectedEndpoint] = useState(tenBitClubApiCategories[0].endpoints[0]);
+export default function DesireMoviesDocs({ apiKey, onApiKeyChange }: DesireMoviesDocsProps) {
+  const [selectedCategory, setSelectedCategory] = useState(desireMoviesApiCategories[0]);
+  const [selectedEndpoint, setSelectedEndpoint] = useState(desireMoviesApiCategories[0].endpoints[0]);
   const [testParams, setTestParams] = useState<Record<string, string>>({});
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
@@ -165,7 +172,7 @@ export default function TenBitClubDocs({ apiKey, onApiKeyChange }: TenBitClubDoc
   };
 
   const handleCategoryChange = (categoryName: string) => {
-    const category = tenBitClubApiCategories.find(cat => cat.name === categoryName);
+    const category = desireMoviesApiCategories.find(cat => cat.name === categoryName);
     if (category) {
       setSelectedCategory(category);
       setSelectedEndpoint(category.endpoints[0]);
@@ -246,9 +253,30 @@ export default function TenBitClubDocs({ apiKey, onApiKeyChange }: TenBitClubDoc
 
     switch (language) {
       case "javascript":
-        if (selectedCategory.name === "Get Movies") {
-          return `// Get movies from 10BitClub
-const response = await fetch("${baseUrl}/api/10bitclub", {
+        if (selectedCategory.name === "GyanGurus") {
+          return `// Extract download links from GyanGurus
+const gyanGurusUrl = "https://gyanigurus.info/spider-man-no-way-home-2021/";
+const response = await fetch(\`${baseUrl}/api/gyanigurus?url=\${encodeURIComponent(gyanGurusUrl)}\`, {
+  headers: {
+    "x-api-key": "YOUR_API_KEY",
+    "Content-Type": "application/json"
+  }
+});
+
+const data = await response.json();
+console.log(data.data);
+
+// Access different provider links
+const hubCloudLinks = data.data.groupedByProvider.HubCloud || [];
+const gdflixLinks = data.data.groupedByProvider.GDflix || [];
+const hubDriveLinks = data.data.groupedByProvider.HubDrive || [];
+
+console.log(\`Found \${hubCloudLinks.length} HubCloud links\`);
+console.log(\`Found \${gdflixLinks.length} GDflix links\`);
+console.log(\`Found \${hubDriveLinks.length} HubDrive links\`);`;
+        } else if (selectedCategory.name === "Get Movies") {
+          return `// Get movies from DesireMovies
+const response = await fetch("${baseUrl}/api/desiremovies", {
   headers: {
     "x-api-key": "YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -258,18 +286,23 @@ const response = await fetch("${baseUrl}/api/10bitclub", {
 const data = await response.json();
 console.log(data.posts); // Array of movies and shows
 
+// DesireMovies features:
+// - High-quality movies (4K, HEVC, x265)
+// - Multi-language support (Hindi, English, Tamil, etc.)
+// - Dual audio releases
+// - Various formats (BluRay, WEB-HDRip, etc.)
+
 // With pagination
-const page2 = await fetch("${baseUrl}/api/10bitclub?page=2", {
+const page2 = await fetch("${baseUrl}/api/desiremovies?page=2", {
   headers: {
     "x-api-key": "YOUR_API_KEY",
     "Content-Type": "application/json"
   }
 });`;
         } else if (selectedCategory.name === "Search Movies") {
-          if (selectedEndpoint.endpoint === "/api/10bitclub/search") {
-            return `// Dedicated search with detailed results
-const searchQuery = "avengers";
-const response = await fetch(\`${baseUrl}/api/10bitclub/search?q=\${encodeURIComponent(searchQuery)}\`, {
+          return `// Search movies on DesireMovies
+const searchQuery = "spider man";
+const response = await fetch(\`${baseUrl}/api/desiremovies?search=\${encodeURIComponent(searchQuery)}\`, {
   headers: {
     "x-api-key": "YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -277,30 +310,22 @@ const response = await fetch(\`${baseUrl}/api/10bitclub/search?q=\${encodeURICom
 });
 
 const data = await response.json();
-console.log(data.results); // Detailed search results with descriptions
+console.log(data.posts); // Search results
 
-// Search results include:
-// - title, postUrl, imageUrl
-// - contentType (Movie/TV Show)
-// - rating, year, description
-// - isTV boolean flag`;
-          } else {
-            return `// General search on 10BitClub
-const searchQuery = "avengers";
-const response = await fetch(\`${baseUrl}/api/10bitclub?search=\${encodeURIComponent(searchQuery)}\`, {
-  headers: {
-    "x-api-key": "YOUR_API_KEY",
-    "Content-Type": "application/json"
-  }
-});
-
-const data = await response.json();
-console.log(data.posts); // Search results`;
-          }
+// Access movie details
+data.posts.forEach(movie => {
+  console.log(\`Title: \${movie.title}\`);
+  console.log(\`Year: \${movie.releaseYear}\`);
+  console.log(\`Type: \${movie.movieType}\`);
+  console.log(\`Categories: \${movie.categories.join(', ')}\`);
+  console.log(\`Languages: \${movie.languages.join(', ')}\`);
+  console.log(\`Qualities: \${movie.qualities.join(', ')}\`);
+  console.log(\`Dual Audio: \${movie.isDualAudio}\`);
+});`;
         } else if (selectedCategory.name === "Movie Details") {
-          return `// Get movie details from 10BitClub
-const movieUrl = "https://10bitclub.xyz/avengers-endgame-2019/";
-const response = await fetch(\`${baseUrl}/api/10bitclub/details?url=\${encodeURIComponent(movieUrl)}\`, {
+          return `// Get movie details from DesireMovies
+const movieUrl = "https://desiremovies.cologne/spider-man-no-way-home-2021/";
+const response = await fetch(\`${baseUrl}/api/desiremovies/details?url=\${encodeURIComponent(movieUrl)}\`, {
   headers: {
     "x-api-key": "YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -308,7 +333,17 @@ const response = await fetch(\`${baseUrl}/api/10bitclub/details?url=\${encodeURI
 });
 
 const data = await response.json();
-console.log(data.data); // Movie details with HubCloud links`;
+console.log(data.data); // Movie details with download links
+
+// Access streaming links
+data.data.downloadSections.forEach(section => {
+  console.log(\`Quality: \${section.quality}\`);
+  console.log(\`Size: \${section.fileSize}\`);
+  section.streamingLinks.forEach(link => {
+    console.log(\`Provider: \${link.provider}\`);
+    console.log(\`URL: \${link.url}\`);
+  });
+});`;
         } else if (selectedCategory.name === "HubCloud Links") {
           return `// Get HubCloud streaming links
 const hubcloudUrl = "https://hubcloud.lol/file/xyz123";
@@ -324,11 +359,34 @@ console.log(data.links); // Direct streaming/download links`;
         }
 
       case "python":
-        if (selectedCategory.name === "Get Movies") {
-          return `# Get movies from 10BitClub
+        if (selectedCategory.name === "GyanGurus") {
+          return `# Extract download links from GyanGurus
+import requests
+from urllib.parse import quote
+
+gyangurus_url = "https://gyanigurus.info/spider-man-no-way-home-2021/"
+url = f"${baseUrl}/api/gyanigurus?url={quote(gyangurus_url)}"
+headers = {
+    "x-api-key": "YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+response = requests.get(url, headers=headers)
+data = response.json()
+
+# Access different provider links
+hubcloud_links = data["data"]["groupedByProvider"].get("HubCloud", [])
+gdflix_links = data["data"]["groupedByProvider"].get("GDflix", [])
+hubdrive_links = data["data"]["groupedByProvider"].get("HubDrive", [])
+
+print(f"Found {len(hubcloud_links)} HubCloud links")
+print(f"Found {len(gdflix_links)} GDflix links")
+print(f"Found {len(hubdrive_links)} HubDrive links")`;
+        } else if (selectedCategory.name === "Get Movies") {
+          return `# Get movies from DesireMovies
 import requests
 
-url = "${baseUrl}/api/10bitclub"
+url = "${baseUrl}/api/desiremovies"
 headers = {
     "x-api-key": "YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -339,30 +397,14 @@ data = response.json()
 print(data["posts"])  # Array of movies and shows
 
 # With pagination
-page_2_response = requests.get(f"{url}?page=2", headers=headers)`;
+page_2_response = requests.get(f"${url}?page=2", headers=headers)`;
         } else if (selectedCategory.name === "Search Movies") {
-          if (selectedEndpoint.endpoint === "/api/10bitclub/search") {
-            return `# Dedicated search with detailed results
+          return `# Search movies on DesireMovies
 import requests
 from urllib.parse import quote
 
-search_query = "avengers"
-url = f"${baseUrl}/api/10bitclub/search?q={quote(search_query)}"
-headers = {
-    "x-api-key": "YOUR_API_KEY",
-    "Content-Type": "application/json"
-}
-
-response = requests.get(url, headers=headers)
-data = response.json()
-print(data["results"])  # Detailed search results with descriptions`;
-          } else {
-            return `# General search on 10BitClub
-import requests
-from urllib.parse import quote
-
-search_query = "avengers"
-url = f"${baseUrl}/api/10bitclub?search={quote(search_query)}"
+search_query = "spider man"
+url = f"${baseUrl}/api/desiremovies?search={quote(search_query)}"
 headers = {
     "x-api-key": "YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -371,14 +413,13 @@ headers = {
 response = requests.get(url, headers=headers)
 data = response.json()
 print(data["posts"])  # Search results`;
-          }
         } else if (selectedCategory.name === "Movie Details") {
-          return `# Get movie details from 10BitClub
+          return `# Get movie details from DesireMovies
 import requests
 from urllib.parse import quote
 
-movie_url = "https://10bitclub.xyz/avengers-endgame-2019/"
-url = f"${baseUrl}/api/10bitclub/details?url={quote(movie_url)}"
+movie_url = "https://desiremovies.uno/spider-man-no-way-home-2021/"
+url = f"${baseUrl}/api/desiremovies/details?url={quote(movie_url)}"
 headers = {
     "x-api-key": "YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -386,7 +427,7 @@ headers = {
 
 response = requests.get(url, headers=headers)
 data = response.json()
-print(data["data"])  # Movie details with HubCloud links`;
+print(data["data"])  # Movie details with download links`;
         } else if (selectedCategory.name === "HubCloud Links") {
           return `# Get HubCloud streaming links
 import requests
@@ -405,36 +446,34 @@ print(data["links"])  # Direct streaming/download links`;
         }
 
       case "curl":
-        if (selectedCategory.name === "Get Movies") {
-          return `# Get movies from 10BitClub
+        if (selectedCategory.name === "GyanGurus") {
+          return `# Extract download links from GyanGurus
 curl -X GET \\
-  "${baseUrl}/api/10bitclub" \\
+  "${baseUrl}/api/gyanigurus?url=https%3A//gyanigurus.info/spider-man-no-way-home-2021/" \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json"`;
+        } else if (selectedCategory.name === "Get Movies") {
+          return `# Get movies from DesireMovies
+curl -X GET \\
+  "${baseUrl}/api/desiremovies" \\
   -H "x-api-key: YOUR_API_KEY" \\
   -H "Content-Type: application/json"
 
 # With pagination
 curl -X GET \\
-  "${baseUrl}/api/10bitclub?page=2" \\
+  "${baseUrl}/api/desiremovies?page=2" \\
   -H "x-api-key: YOUR_API_KEY" \\
   -H "Content-Type: application/json"`;
         } else if (selectedCategory.name === "Search Movies") {
-          if (selectedEndpoint.endpoint === "/api/10bitclub/search") {
-            return `# Dedicated search with detailed results
+          return `# Search movies on DesireMovies
 curl -X GET \\
-  "${baseUrl}/api/10bitclub/search?q=avengers" \\
+  "${baseUrl}/api/desiremovies?search=spider%20man" \\
   -H "x-api-key: YOUR_API_KEY" \\
   -H "Content-Type: application/json"`;
-          } else {
-            return `# General search on 10BitClub
-curl -X GET \\
-  "${baseUrl}/api/10bitclub?search=avengers" \\
-  -H "x-api-key: YOUR_API_KEY" \\
-  -H "Content-Type: application/json"`;
-          }
         } else if (selectedCategory.name === "Movie Details") {
-          return `# Get movie details from 10BitClub
+          return `# Get movie details from DesireMovies
 curl -X GET \\
-  "${baseUrl}/api/10bitclub/details?url=https%3A//10bitclub.xyz/avengers-endgame-2019/" \\
+  "${baseUrl}/api/desiremovies/details?url=https%3A//desiremovies.cologne/spider-man-no-way-home-2021/" \\
   -H "x-api-key: YOUR_API_KEY" \\
   -H "Content-Type: application/json"`;
         } else if (selectedCategory.name === "HubCloud Links") {
@@ -452,147 +491,282 @@ curl -X GET \\
 
   const getResponseExample = (category: string) => {
     switch (category) {
+      case "GyanGurus":
+        return `{
+  "success": true,
+  "data": {
+    "totalLinks": 6,
+    "providers": ["HubCloud", "GDflix", "HubDrive"],
+    "links": [
+      {
+        "url": "https://hubcloud.lol/file/abc123def456",
+        "provider": "HubCloud",
+        "type": "cloud",
+        "quality": "1080p",
+        "fileName": "Spider-Man-NWH-2021-1080p.mp4",
+        "fileSize": "Unknown",
+        "displayText": "HubCloud 1080p Download",
+        "isWorking": true
+      },
+      {
+        "url": "https://gdflix.lol/file/def456ghi789",
+        "provider": "GDflix",
+        "type": "gdrive",
+        "quality": "720p",
+        "fileName": "Spider-Man-NWH-2021-720p.mp4",
+        "fileSize": "Unknown",
+        "displayText": "GDflix 720p Download",
+        "isWorking": true
+      },
+      {
+        "url": "https://hubdrive.lol/file/ghi789jkl012",
+        "provider": "HubDrive",
+        "type": "cloud",
+        "quality": "480p",
+        "fileName": "Spider-Man-NWH-2021-480p.mp4",
+        "fileSize": "Unknown",
+        "displayText": "HubDrive 480p Download",
+        "isWorking": true
+      }
+    ],
+    "groupedByProvider": {
+      "HubCloud": [
+        {
+          "url": "https://hubcloud.lol/file/abc123def456",
+          "provider": "HubCloud",
+          "type": "cloud",
+          "quality": "1080p",
+          "fileName": "Spider-Man-NWH-2021-1080p.mp4",
+          "fileSize": "Unknown",
+          "displayText": "HubCloud 1080p Download",
+          "isWorking": true
+        }
+      ],
+      "GDflix": [
+        {
+          "url": "https://gdflix.lol/file/def456ghi789",
+          "provider": "GDflix",
+          "type": "gdrive",
+          "quality": "720p",
+          "fileName": "Spider-Man-NWH-2021-720p.mp4",
+          "fileSize": "Unknown",
+          "displayText": "GDflix 720p Download",
+          "isWorking": true
+        }
+      ],
+      "HubDrive": [
+        {
+          "url": "https://hubdrive.lol/file/ghi789jkl012",
+          "provider": "HubDrive",
+          "type": "cloud",
+          "quality": "480p",
+          "fileName": "Spider-Man-NWH-2021-480p.mp4",
+          "fileSize": "Unknown",
+          "displayText": "HubDrive 480p Download",
+          "isWorking": true
+        }
+      ]
+    },
+    "sourceUrl": "https://gyanigurus.info/spider-man-no-way-home-2021/"
+  },
+  "website": "GyanGurus",
+  "remainingRequests": 95
+}`;
+
       case "Get Movies":
         return `{
   "success": true,
   "count": 20,
   "posts": [
     {
-      "imageUrl": "https://10bitclub.xyz/wp-content/uploads/2024/01/avengers-endgame.jpg",
-      "title": "Avengers: Endgame (2019) Tamil Dubbed Movie",
-      "postUrl": "https://10bitclub.xyz/avengers-endgame-2019/",
-      "rating": "8.4",
-      "year": "2019",
-      "quality": "1080p",
-      "featured": true
+      "id": "123456",
+      "title": "Spider-Man: No Way Home (2021) Hindi Dubbed Movie [Dual Audio] WEB-HDRip 480p 720p 1080p HD",
+      "imageUrl": "https://desiremovies.cologne/wp-content/uploads/2022/01/spider-man-nwh.jpg",
+      "postUrl": "https://desiremovies.cologne/spider-man-no-way-home-2021-hindi-dubbed/",
+      "description": "When a spell goes wrong, dangerous foes from other worlds start to appear, forcing Peter to discover what it truly means to be Spider-Man.",
+      "releaseYear": "2021",
+      "movieType": "WEB-HDRip",
+      "categories": ["Hollywood", "Action", "Adventure"],
+      "qualities": ["480p", "720p", "1080p", "HEVC"],
+      "languages": ["Hindi", "English", "Dual Audio"],
+      "isDualAudio": true,
+      "audioFormat": "DD 5.1",
+      "hasSubtitles": true,
+      "website": "DesireMovies"
     },
     {
-      "imageUrl": "https://10bitclub.xyz/wp-content/uploads/2024/01/spider-man.jpg",
-      "title": "Spider-Man: No Way Home (2021) Tamil Dubbed",
-      "postUrl": "https://10bitclub.xyz/spider-man-no-way-home-2021/",
-      "rating": "8.2",
-      "year": "2021",
-      "quality": "720p",
-      "featured": false
+      "id": "123457",
+      "title": "RRR (2022) Hindi Dubbed Movie [Dual Audio] BluRay 480p 720p 1080p 4K UHD",
+      "imageUrl": "https://desiremovies.cologne/wp-content/uploads/2022/03/rrr-movie.jpg",
+      "postUrl": "https://desiremovies.cologne/rrr-2022-hindi-dubbed-movie/",
+      "description": "A fearless revolutionary and an officer in the British force, who once shared a deep bond, decide to join forces and chart out an inspirational path of freedom against the despotic rule.",
+      "releaseYear": "2022",
+      "movieType": "BluRay",
+      "categories": ["South Indian", "Action", "Drama", "4K Movies"],
+      "qualities": ["480p", "720p", "1080p", "4K UHD", "HEVC"],
+      "languages": ["Hindi", "Telugu", "Tamil", "Dual Audio"],
+      "isDualAudio": true,
+      "audioFormat": "DD 5.1",
+      "hasSubtitles": true,
+      "website": "DesireMovies"
     }
   ],
+  "searchQuery": null,
   "page": 1,
   "source": "page",
+  "website": "DesireMovies",
   "remainingRequests": 95
 }`;
 
       case "Search Movies":
-        if (selectedEndpoint.endpoint === "/api/10bitclub/search") {
-          return `{
+        return `{
   "success": true,
-  "query": "avengers",
-  "count": 3,
-  "results": [
-    {
-      "title": "Avengers: Endgame (2019) Tamil Dubbed Movie",
-      "postUrl": "https://10bitclub.xyz/avengers-endgame-2019/",
-      "imageUrl": "https://10bitclub.xyz/wp-content/uploads/2024/01/avengers-endgame.jpg",
-      "contentType": "Movie",
-      "rating": "8.4",
-      "year": "2019",
-      "description": "After the devastating events of Avengers: Infinity War, the universe is in ruins. With the help of remaining allies, the Avengers assemble once more...",
-      "isTV": false,
-      "website": "10BitClub"
-    },
-    {
-      "title": "Scavengers Reign S01",
-      "postUrl": "https://10bitclub.xyz/tvshows/scavengers-reign-s01/",
-      "imageUrl": "https://10bitclub.xyz/wp-content/uploads/2023/12/bFlVZV8TQbs8hcIY7PVYonYFMgK-150x150.jpg",
-      "contentType": "TV Show",
-      "rating": "8.56",
-      "year": "2023",
-      "description": "When a deep space freighter is damaged by a solar flare its surviving crew are stranded on a beautiful and unforgiving planet. They begin to learn the true nature of this planet as they try to ...",
-      "isTV": true,
-      "website": "10BitClub"
-    }
-  ],
-  "website": "10BitClub",
-  "searchUrl": "https://10bitclub.xyz/?s=avengers",
-  "remainingRequests": 93
-}`;
-        } else {
-          return `{
-  "success": true,
-  "count": 5,
+  "count": 8,
   "posts": [
     {
-      "imageUrl": "https://10bitclub.xyz/wp-content/uploads/2024/01/avengers-endgame.jpg",
-      "title": "Avengers: Endgame (2019) Tamil Dubbed Movie",
-      "postUrl": "https://10bitclub.xyz/avengers-endgame-2019/",
-      "rating": "8.4",
-      "year": "2019",
-      "quality": "1080p",
-      "featured": true,
-      "contentType": "Movie"
+      "id": "123456",
+      "title": "Spider-Man: No Way Home (2021) Hindi Dubbed Movie [Dual Audio] WEB-HDRip",
+      "imageUrl": "https://desiremovies.cologne/wp-content/uploads/2022/01/spider-man-nwh.jpg",
+      "postUrl": "https://desiremovies.cologne/spider-man-no-way-home-2021-hindi-dubbed/",
+      "description": "When a spell goes wrong, dangerous foes from other worlds start to appear, forcing Peter to discover what it truly means to be Spider-Man.",
+      "releaseYear": "2021",
+      "movieType": "WEB-HDRip",
+      "categories": ["Hollywood", "Action", "Adventure"],
+      "qualities": ["480p", "720p", "1080p", "HEVC"],
+      "languages": ["Hindi", "English", "Dual Audio"],
+      "isDualAudio": true,
+      "audioFormat": "DD 5.1",
+      "hasSubtitles": true,
+      "website": "DesireMovies"
     },
     {
-      "imageUrl": "https://10bitclub.xyz/wp-content/uploads/2023/12/avengers-infinity-war.jpg",
-      "title": "Avengers: Infinity War (2018) Tamil Dubbed",
-      "postUrl": "https://10bitclub.xyz/avengers-infinity-war-2018/",
-      "rating": "8.4",
-      "year": "2018",
-      "quality": "1080p",
-      "featured": false,
-      "contentType": "Movie"
+      "id": "123458",
+      "title": "Spider-Man: Far From Home (2019) Hindi Dubbed Movie [Dual Audio] BluRay",
+      "imageUrl": "https://desiremovies.cologne/wp-content/uploads/2019/07/spider-man-ffh.jpg",
+      "postUrl": "https://desiremovies.cologne/spider-man-far-from-home-2019-hindi-dubbed/",
+      "description": "Following the events of Avengers: Endgame, Spider-Man must step up to take on new threats in a world that has changed forever.",
+      "releaseYear": "2019",
+      "movieType": "BluRay",
+      "categories": ["Hollywood", "Action", "Adventure"],
+      "qualities": ["480p", "720p", "1080p"],
+      "languages": ["Hindi", "English", "Dual Audio"],
+      "isDualAudio": true,
+      "audioFormat": "DD 5.1",
+      "hasSubtitles": true,
+      "website": "DesireMovies"
+    },
+    {
+      "id": "123459",
+      "title": "Spider-Man: Into the Spider-Verse (2018) Hindi Dubbed Movie [Dual Audio] BluRay",
+      "imageUrl": "https://desiremovies.cologne/wp-content/uploads/2018/12/spider-verse.jpg",
+      "postUrl": "https://desiremovies.cologne/spider-man-into-spider-verse-2018-hindi-dubbed/",
+      "description": "Teen Miles Morales becomes the Spider-Man of his universe, and must join with five spider-powered individuals from other dimensions.",
+      "releaseYear": "2018",
+      "movieType": "BluRay",
+      "categories": ["Hollywood", "Animation", "Action"],
+      "qualities": ["480p", "720p", "1080p"],
+      "languages": ["Hindi", "English", "Dual Audio"],
+      "isDualAudio": true,
+      "audioFormat": "DD 5.1",
+      "hasSubtitles": true,
+      "website": "DesireMovies"
     }
   ],
-  "searchQuery": "avengers",
+  "searchQuery": "spider man",
+  "page": 1,
   "source": "search",
+  "website": "DesireMovies",
   "remainingRequests": 94
 }`;
-        }
 
       case "Movie Details":
         return `{
   "success": true,
   "data": {
-    "title": "Avengers: Endgame (2019) Tamil Dubbed Movie",
-    "posterImage": "https://10bitclub.xyz/wp-content/uploads/2024/01/avengers-endgame.jpg",
-    "releaseDate": "2019",
-    "country": "USA",
-    "runtime": "181 min",
-    "rating": "8.4/10",
-    "synopsis": "After the devastating events of Avengers: Infinity War, the universe is in ruins. With the help of remaining allies, the Avengers assemble once more in order to reverse Thanos' actions and restore balance to the universe.",
-    "hubCloudSections": [
+    "title": "Spider-Man: No Way Home (2021) Hindi Dubbed Movie [Dual Audio] WEB-HDRip",
+    "posterImage": "https://desiremovies.cologne/wp-content/uploads/2022/01/spider-man-nwh-poster.jpg",
+    "releaseYear": "2021",
+    "director": "Jon Watts",
+    "cast": "Tom Holland, Zendaya, Benedict Cumberbatch, Jacob Batalon",
+    "genres": ["Action", "Adventure", "Sci-Fi"],
+    "runtime": "148 min",
+    "languages": ["Hindi", "English", "Dual Audio"],
+    "audioFormat": "DD 5.1",
+    "hasSubtitles": true,
+    "synopsis": "When a spell goes wrong, dangerous foes from other worlds start to appear, forcing Peter to discover what it truly means to be Spider-Man. With Spider-Man's identity now revealed, Peter asks Doctor Strange for help.",
+    "downloadSections": [
       {
-        "title": "Avengers Endgame (2019) Tamil Dubbed 1080p BluRay x264 2.8GB",
-        "quality": "1080p",
-        "fileSize": "2.8GB",
-        "language": "Tamil",
-        "hubCloudLinks": [
+        "quality": "480p",
+        "fileSize": "450MB",
+        "format": "WEB-HDRip",
+        "streamingLinks": [
           {
-            "url": "https://hubcloud.lol/file/abc123",
-            "text": "HubCloud Link 1"
+            "provider": "StreamSB",
+            "url": "https://streamsb.net/e/xyz123",
+            "type": "stream"
           },
           {
-            "url": "https://hubcloud.lol/file/def456",
-            "text": "HubCloud Link 2"
+            "provider": "Doodstream",
+            "url": "https://dood.la/e/abc456",
+            "type": "stream"
+          },
+          {
+            "provider": "HubCloud",
+            "url": "https://hubcloud.lol/file/def789",
+            "type": "download"
           }
         ]
       },
       {
-        "title": "Avengers Endgame (2019) Tamil Dubbed 720p BluRay x264 1.4GB",
         "quality": "720p",
-        "fileSize": "1.4GB",
-        "language": "Tamil",
-        "hubCloudLinks": [
+        "fileSize": "1.2GB",
+        "format": "WEB-HDRip",
+        "streamingLinks": [
           {
-            "url": "https://hubcloud.lol/file/ghi789",
-            "text": "HubCloud Link 1"
+            "provider": "StreamSB",
+            "url": "https://streamsb.net/e/xyz124",
+            "type": "stream"
+          },
+          {
+            "provider": "Doodstream",
+            "url": "https://dood.la/e/abc457",
+            "type": "stream"
+          },
+          {
+            "provider": "HubCloud",
+            "url": "https://hubcloud.lol/file/def790",
+            "type": "download"
+          }
+        ]
+      },
+      {
+        "quality": "1080p",
+        "fileSize": "2.5GB",
+        "format": "WEB-HDRip",
+        "streamingLinks": [
+          {
+            "provider": "StreamSB",
+            "url": "https://streamsb.net/e/xyz125",
+            "type": "stream"
+          },
+          {
+            "provider": "Doodstream",
+            "url": "https://dood.la/e/abc458",
+            "type": "stream"
+          },
+          {
+            "provider": "HubCloud",
+            "url": "https://hubcloud.lol/file/def791",
+            "type": "download"
           }
         ]
       }
     ],
-    "tags": ["Action", "Adventure", "Drama", "Sci-Fi"],
-    "totalHubCloudLinks": 3,
-    "downloadSectionsCount": 2
+    "availableQualities": ["480p", "720p", "1080p"],
+    "totalStreamingLinks": 9,
+    "website": "DesireMovies"
   },
-  "sourceUrl": "https://10bitclub.xyz/avengers-endgame-2019/",
+  "sourceUrl": "https://desiremovies.cologne/spider-man-no-way-home-2021-hindi-dubbed/",
   "remainingRequests": 93
 }`;
 
@@ -602,30 +776,38 @@ curl -X GET \\
   "links": [
     {
       "quality": "1080p",
-      "size": "2.8GB",
-      "link": "https://gpdl.hubcdn.fans/d/abc123/Avengers-Endgame-2019-Tamil-1080p.mp4",
+      "size": "2.5GB",
+      "link": "https://gpdl.hubcdn.fans/d/abc123/Spider-Man-NWH-2021-Hindi-1080p.mp4",
       "server": "HubCloud Server 1",
       "type": "MP4",
       "isDirect": true
     },
     {
       "quality": "1080p",
-      "size": "2.8GB",
-      "link": "https://gpdl2.hubcdn.fans/d/abc123/Avengers-Endgame-2019-Tamil-1080p.mp4",
+      "size": "2.5GB",
+      "link": "https://gpdl2.hubcdn.fans/d/abc123/Spider-Man-NWH-2021-Hindi-1080p.mp4",
       "server": "HubCloud Server 2",
       "type": "MP4",
       "isDirect": true
     },
     {
       "quality": "720p",
-      "size": "1.4GB",
-      "link": "https://gpdl.hubcdn.fans/d/abc123/Avengers-Endgame-2019-Tamil-720p.mp4",
+      "size": "1.2GB",
+      "link": "https://gpdl.hubcdn.fans/d/abc123/Spider-Man-NWH-2021-Hindi-720p.mp4",
+      "server": "HubCloud Server 1",
+      "type": "MP4",
+      "isDirect": true
+    },
+    {
+      "quality": "480p",
+      "size": "450MB",
+      "link": "https://gpdl.hubcdn.fans/d/abc123/Spider-Man-NWH-2021-Hindi-480p.mp4",
       "server": "HubCloud Server 1",
       "type": "MP4",
       "isDirect": true
     }
   ],
-  "totalLinks": 3,
+  "totalLinks": 4,
   "sourceUrl": "https://hubcloud.lol/file/abc123",
   "remainingRequests": 92
 }`;
@@ -654,11 +836,11 @@ curl -X GET \\
         <Card>
           <CardHeader className="pb-4 sm:pb-6">
             <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-              <Film className="h-5 w-5 text-blue-500" />
-              10BitClub API Testing
+              <Clapperboard className="h-5 w-5 text-pink-500" />
+              DesireMovies & GyanGurus API Testing
             </CardTitle>
             <CardDescription className="text-sm">
-              Enter your API key to test the 10BitClub endpoints. Get your API key from the{" "}
+              Enter your API key to test the DesireMovies and GyanGurus endpoints. Get your API key from the{" "}
               <a href="/dashboard/api-keys" className="text-primary hover:underline">
                 API Keys page
               </a>
@@ -695,7 +877,7 @@ curl -X GET \\
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {tenBitClubApiCategories.map((category) => (
+                    {desireMoviesApiCategories.map((category) => (
                       <SelectItem key={category.name} value={category.name} className="text-sm">
                         <div className="flex items-center gap-2">
                           <div className={`w-3 h-3 rounded-full ${category.color}`}></div>
@@ -796,11 +978,11 @@ curl -X GET \\
         <Card>
           <CardHeader className="pb-4 sm:pb-6">
             <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-              <Film className="h-5 w-5 text-blue-500" />
-              10BitClub API Examples
+              <Clapperboard className="h-5 w-5 text-pink-500" />
+              DesireMovies API Examples
             </CardTitle>
             <CardDescription className="text-sm">
-              Code examples for integrating with our 10BitClub API
+              Code examples for integrating with our DesireMovies API
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 sm:space-y-6">
@@ -812,7 +994,7 @@ curl -X GET \\
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {tenBitClubApiCategories.map((category) => (
+                    {desireMoviesApiCategories.map((category) => (
                       <SelectItem key={category.name} value={category.name} className="text-sm">
                         <div className="flex items-center gap-2">
                           <div className={`w-3 h-3 rounded-full ${category.color}`}></div>
@@ -863,7 +1045,7 @@ curl -X GET \\
                         <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
                         <div className="w-3 h-3 rounded-full bg-[#27ca3f]"></div>
                       </div>
-                      <span className="text-gray-300 text-sm ml-2 truncate">10bitclub.js</span>
+                      <span className="text-gray-300 text-sm ml-2 truncate">desiremovies.js</span>
                     </div>
                     <Button
                       size="sm"
@@ -893,7 +1075,7 @@ curl -X GET \\
                         <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
                         <div className="w-3 h-3 rounded-full bg-[#27ca3f]"></div>
                       </div>
-                      <span className="text-gray-300 text-sm ml-2 truncate">10bitclub.py</span>
+                      <span className="text-gray-300 text-sm ml-2 truncate">desiremovies.py</span>
                     </div>
                     <Button
                       size="sm"
@@ -950,14 +1132,15 @@ curl -X GET \\
         <Card>
           <CardHeader className="pb-4 sm:pb-6">
             <CardTitle className="text-lg sm:text-xl">Response Examples</CardTitle>
-            <CardDescription className="text-sm">Expected response structures for 10BitClub endpoints</CardDescription>
+            <CardDescription className="text-sm">Expected response structures for DesireMovies endpoints</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Tabs defaultValue="movies" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="movies" className="text-xs sm:text-sm">Movies List</TabsTrigger>
                 <TabsTrigger value="search" className="text-xs sm:text-sm">Search Results</TabsTrigger>
                 <TabsTrigger value="details" className="text-xs sm:text-sm">Movie Details</TabsTrigger>
+                <TabsTrigger value="gyanigurus" className="text-xs sm:text-sm">GyanGurus</TabsTrigger>
                 <TabsTrigger value="hubcloud" className="text-xs sm:text-sm">HubCloud</TabsTrigger>
               </TabsList>
 
@@ -973,10 +1156,93 @@ curl -X GET \\
                 <ColorizedJSON data={getResponseExample("Movie Details")} title="movie-details" />
               </TabsContent>
 
+              <TabsContent value="gyanigurus">
+                <ColorizedJSON data={getResponseExample("GyanGurus")} title="gyanigurus-links" />
+              </TabsContent>
+
               <TabsContent value="hubcloud">
                 <ColorizedJSON data={getResponseExample("HubCloud Links")} title="hubcloud-links" />
               </TabsContent>
             </Tabs>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-4 sm:pb-6">
+            <CardTitle className="text-lg sm:text-xl">DesireMovies Features</CardTitle>
+            <CardDescription className="text-sm">What makes DesireMovies special</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 bg-gradient-to-br from-pink-50 to-violet-50 dark:from-pink-900/20 dark:to-violet-900/20 rounded-lg">
+                <h4 className="font-semibold mb-2 text-sm flex items-center gap-2">
+                  <Star className="h-4 w-4 text-pink-500" />
+                  High Quality Releases
+                </h4>
+                <ul className="text-xs space-y-1 text-muted-foreground">
+                  <li>• 4K UHD movies with HDR support</li>
+                  <li>• HEVC/x265 encoded for smaller file sizes</li>
+                  <li>• BluRay and WEB-DL sources</li>
+                  <li>• Multiple quality options (480p to 4K)</li>
+                </ul>
+              </div>
+              
+              <div className="p-4 bg-gradient-to-br from-violet-50 to-blue-50 dark:from-violet-900/20 dark:to-blue-900/20 rounded-lg">
+                <h4 className="font-semibold mb-2 text-sm flex items-center gap-2">
+                  <Film className="h-4 w-4 text-violet-500" />
+                  Multi-Language Support
+                </h4>
+                <ul className="text-xs space-y-1 text-muted-foreground">
+                  <li>• Hindi dubbed movies</li>
+                  <li>• Dual audio (Original + Hindi)</li>
+                  <li>• Regional languages (Tamil, Telugu, etc.)</li>
+                  <li>• English subtitles available</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="p-3 sm:p-4 bg-muted rounded-lg">
+              <h4 className="font-semibold mb-2 text-sm sm:text-base">Content Categories</h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-pink-500"></div>
+                  <span>Hollywood Movies</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-violet-500"></div>
+                  <span>Bollywood Movies</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  <span>South Indian Movies</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                  <span>720p HEVC</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                  <span>4K Movies</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                  <span>Dual Audio</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 sm:p-4 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-lg">
+              <h4 className="font-semibold mb-2 text-sm flex items-center gap-2">
+                <Cloud className="h-4 w-4 text-orange-500" />
+                Streaming & Download Options
+              </h4>
+              <div className="text-xs space-y-1 text-muted-foreground">
+                <p>• Multiple streaming providers (StreamSB, Doodstream, etc.)</p>
+                <p>• Direct HubCloud download links</p>
+                <p>• Fast streaming with minimal buffering</p>
+                <p>• Mobile-optimized streaming links</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </TabsContent>

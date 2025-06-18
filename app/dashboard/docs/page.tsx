@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import MoviesDocs from "@/components/ui/movies-docs";
 import AllMoviesDocs from "@/components/ui/allmovies-docs";
 import TenBitClubDocs from "@/components/ui/10bitclub-docs";
+import KMmoviesDocs from "@/components/ui/kmmovies-docs";
+import DesireMoviesDocs from "@/components/ui/desiremovies-docs";
 
 interface ApiEndpoint {
   method: string;
@@ -385,6 +387,24 @@ curl -X GET \\
                   <div className="flex items-center gap-2">
                     <Film className="h-4 w-4" />
                     10BitClub API
+                  </div>
+                </SelectItem>
+                <SelectItem value="kmmovies" className="text-sm">
+                  <div className="flex items-center gap-2">
+                    <Film className="h-4 w-4" />
+                    KMmovies API
+                  </div>
+                </SelectItem>
+                <SelectItem value="gyanigurus" className="text-sm">
+                  <div className="flex items-center gap-2">
+                    <Film className="h-4 w-4" />
+                    GyanGurus API
+                  </div>
+                </SelectItem>
+                <SelectItem value="desiremovies" className="text-sm">
+                  <div className="flex items-center gap-2">
+                    <Film className="h-4 w-4" />
+                    DesireMovies API
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -922,6 +942,18 @@ curl -X GET \\
       ) : selectedApiType === "10bitclub" ? (
         <div className="w-full overflow-hidden">
           <TenBitClubDocs apiKey={apiKey} onApiKeyChange={setApiKey} />
+        </div>
+      ) : selectedApiType === "kmmovies" ? (
+        <div className="w-full overflow-hidden">
+          <KMmoviesDocs apiKey={apiKey} onApiKeyChange={setApiKey} />
+        </div>
+      ) : selectedApiType === "gyanigurus" ? (
+        <div className="w-full overflow-hidden">
+          <DesireMoviesDocs apiKey={apiKey} onApiKeyChange={setApiKey} />
+        </div>
+      ) : selectedApiType === "desiremovies" ? (
+        <div className="w-full overflow-hidden">
+          <DesireMoviesDocs apiKey={apiKey} onApiKeyChange={setApiKey} />
         </div>
       ) : (
         <div className="w-full overflow-hidden">

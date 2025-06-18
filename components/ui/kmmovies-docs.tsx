@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Play, Code2, Home, Search, Film, Download, Cloud, Info } from "lucide-react";
+import { Copy, Play, Code2, Home, Search, Film, Download, Cloud, Info, Link2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface ApiEndpoint {
@@ -26,16 +26,16 @@ interface ApiCategory {
   color: string;
 }
 
-const tenBitClubApiCategories: ApiCategory[] = [
+const kmMoviesApiCategories: ApiCategory[] = [
   {
     name: "Get Movies",
     icon: <Home className="h-4 w-4" />,
-    color: "bg-blue-500",
+    color: "bg-emerald-500",
     endpoints: [
       {
         method: "GET",
-        endpoint: "/api/10bitclub",
-        description: "Get all movies and shows with pagination from 10BitClub",
+        endpoint: "/api/kmmovies",
+        description: "Get all movies and TV series with pagination from KMmovies",
         params: [
           { name: "page", type: "number", required: false, description: "Page number for pagination (default: 1)" }
         ]
@@ -45,22 +45,14 @@ const tenBitClubApiCategories: ApiCategory[] = [
   {
     name: "Search Movies",
     icon: <Search className="h-4 w-4" />,
-    color: "bg-green-500",
+    color: "bg-blue-500",
     endpoints: [
       {
         method: "GET",
-        endpoint: "/api/10bitclub",
-        description: "Search movies and shows by title on 10BitClub (general search)",
+        endpoint: "/api/kmmovies",
+        description: "Search movies and TV series by title on KMmovies",
         params: [
-          { name: "search", type: "string", required: true, description: "Search query (movie/show title)" }
-        ]
-      },
-      {
-        method: "GET",
-        endpoint: "/api/10bitclub/search",
-        description: "Dedicated search endpoint with detailed results including descriptions",
-        params: [
-          { name: "q", type: "string", required: true, description: "Search query (movie/show title)" }
+          { name: "search", type: "string", required: true, description: "Search query (movie/series title)" }
         ]
       }
     ]
@@ -72,10 +64,25 @@ const tenBitClubApiCategories: ApiCategory[] = [
     endpoints: [
       {
         method: "GET",
-        endpoint: "/api/10bitclub/details",
-        description: "Get detailed movie information including synopsis and HubCloud links",
+        endpoint: "/api/kmmovies/details",
+        description: "Get detailed movie information including storyline, cast, director, and download links",
         params: [
-          { name: "url", type: "string", required: true, description: "Full movie URL from 10bitclub.xyz (e.g., https://10bitclub.xyz/movie-name/)" }
+          { name: "url", type: "string", required: true, description: "Full movie URL from kmmovies.mobi (e.g., https://w1.kmmovies.mobi/movie-name/)" }
+        ]
+      }
+    ]
+  },
+  {
+    name: "Magic Links",
+    icon: <Link2 className="h-4 w-4" />,
+    color: "bg-indigo-500",
+    endpoints: [
+      {
+        method: "GET",
+        endpoint: "/api/kmmovies/magic-links",
+        description: "Extract streaming and download links from Magic Links pages",
+        params: [
+          { name: "url", type: "string", required: true, description: "Magic Links URL (e.g., https://magiclinks.my/xyz123)" }
         ]
       }
     ]
@@ -97,7 +104,7 @@ const tenBitClubApiCategories: ApiCategory[] = [
   }
 ];
 
-interface TenBitClubDocsProps {
+interface KMmoviesDocsProps {
   apiKey: string;
   onApiKeyChange: (key: string) => void;
 }
@@ -152,9 +159,9 @@ const ColorizedJSON = ({ data, title = "Response" }: { data: string; title?: str
   );
 };
 
-export default function TenBitClubDocs({ apiKey, onApiKeyChange }: TenBitClubDocsProps) {
-  const [selectedCategory, setSelectedCategory] = useState(tenBitClubApiCategories[0]);
-  const [selectedEndpoint, setSelectedEndpoint] = useState(tenBitClubApiCategories[0].endpoints[0]);
+export default function KMmoviesDocs({ apiKey, onApiKeyChange }: KMmoviesDocsProps) {
+  const [selectedCategory, setSelectedCategory] = useState(kmMoviesApiCategories[0]);
+  const [selectedEndpoint, setSelectedEndpoint] = useState(kmMoviesApiCategories[0].endpoints[0]);
   const [testParams, setTestParams] = useState<Record<string, string>>({});
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
@@ -165,7 +172,7 @@ export default function TenBitClubDocs({ apiKey, onApiKeyChange }: TenBitClubDoc
   };
 
   const handleCategoryChange = (categoryName: string) => {
-    const category = tenBitClubApiCategories.find(cat => cat.name === categoryName);
+    const category = kmMoviesApiCategories.find(cat => cat.name === categoryName);
     if (category) {
       setSelectedCategory(category);
       setSelectedEndpoint(category.endpoints[0]);
@@ -247,8 +254,8 @@ export default function TenBitClubDocs({ apiKey, onApiKeyChange }: TenBitClubDoc
     switch (language) {
       case "javascript":
         if (selectedCategory.name === "Get Movies") {
-          return `// Get movies from 10BitClub
-const response = await fetch("${baseUrl}/api/10bitclub", {
+          return `// Get movies and series from KMmovies
+const response = await fetch("${baseUrl}/api/kmmovies", {
   headers: {
     "x-api-key": "YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -256,20 +263,19 @@ const response = await fetch("${baseUrl}/api/10bitclub", {
 });
 
 const data = await response.json();
-console.log(data.posts); // Array of movies and shows
+console.log(data.posts); // Array of movies and series
 
 // With pagination
-const page2 = await fetch("${baseUrl}/api/10bitclub?page=2", {
+const page2 = await fetch("${baseUrl}/api/kmmovies?page=2", {
   headers: {
     "x-api-key": "YOUR_API_KEY",
     "Content-Type": "application/json"
   }
 });`;
         } else if (selectedCategory.name === "Search Movies") {
-          if (selectedEndpoint.endpoint === "/api/10bitclub/search") {
-            return `// Dedicated search with detailed results
-const searchQuery = "avengers";
-const response = await fetch(\`${baseUrl}/api/10bitclub/search?q=\${encodeURIComponent(searchQuery)}\`, {
+          return `// Search for movies and series
+const searchQuery = "spider man";
+const response = await fetch(\`${baseUrl}/api/kmmovies?search=\${encodeURIComponent(searchQuery)}\`, {
   headers: {
     "x-api-key": "YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -277,30 +283,16 @@ const response = await fetch(\`${baseUrl}/api/10bitclub/search?q=\${encodeURICom
 });
 
 const data = await response.json();
-console.log(data.results); // Detailed search results with descriptions
+console.log(data.posts); // Search results
 
-// Search results include:
-// - title, postUrl, imageUrl
-// - contentType (Movie/TV Show)
-// - rating, year, description
-// - isTV boolean flag`;
-          } else {
-            return `// General search on 10BitClub
-const searchQuery = "avengers";
-const response = await fetch(\`${baseUrl}/api/10bitclub?search=\${encodeURIComponent(searchQuery)}\`, {
-  headers: {
-    "x-api-key": "YOUR_API_KEY",
-    "Content-Type": "application/json"
-  }
-});
-
-const data = await response.json();
-console.log(data.posts); // Search results`;
-          }
+// KMmovies returns both movies and series
+data.posts.forEach(post => {
+  console.log(\`\${post.title} - Type: \${post.type}\`);
+});`;
         } else if (selectedCategory.name === "Movie Details") {
-          return `// Get movie details from 10BitClub
-const movieUrl = "https://10bitclub.xyz/avengers-endgame-2019/";
-const response = await fetch(\`${baseUrl}/api/10bitclub/details?url=\${encodeURIComponent(movieUrl)}\`, {
+          return `// Get detailed movie information
+const movieUrl = "https://w1.kmmovies.mobi/spider-man-no-way-home-2021/";
+const response = await fetch(\`${baseUrl}/api/kmmovies/details?url=\${encodeURIComponent(movieUrl)}\`, {
   headers: {
     "x-api-key": "YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -308,7 +300,31 @@ const response = await fetch(\`${baseUrl}/api/10bitclub/details?url=\${encodeURI
 });
 
 const data = await response.json();
-console.log(data.data); // Movie details with HubCloud links`;
+console.log(data.data);
+
+// Access movie details
+const movie = data.data;
+console.log("Title:", movie.title);
+console.log("Storyline:", movie.storyline);
+console.log("Download Links:", movie.downloadLinks);
+console.log("Languages:", movie.languages);`;
+        } else if (selectedCategory.name === "Magic Links") {
+          return `// Extract links from Magic Links page
+const magicUrl = "https://magiclinks.my/abc123";
+const response = await fetch(\`${baseUrl}/api/kmmovies/magic-links?url=\${encodeURIComponent(magicUrl)}\`, {
+  headers: {
+    "x-api-key": "YOUR_API_KEY",
+    "Content-Type": "application/json"
+  }
+});
+
+const data = await response.json();
+console.log(data.data.links);
+
+// Different link types available
+data.data.links.forEach(link => {
+  console.log(\`\${link.provider} - \${link.type} - \${link.quality}\`);
+});`;
         } else if (selectedCategory.name === "HubCloud Links") {
           return `// Get HubCloud streaming links
 const hubcloudUrl = "https://hubcloud.lol/file/xyz123";
@@ -325,10 +341,10 @@ console.log(data.links); // Direct streaming/download links`;
 
       case "python":
         if (selectedCategory.name === "Get Movies") {
-          return `# Get movies from 10BitClub
+          return `# Get movies and series from KMmovies
 import requests
 
-url = "${baseUrl}/api/10bitclub"
+url = "${baseUrl}/api/kmmovies"
 headers = {
     "x-api-key": "YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -336,18 +352,17 @@ headers = {
 
 response = requests.get(url, headers=headers)
 data = response.json()
-print(data["posts"])  # Array of movies and shows
+print(data["posts"])  # Array of movies and series
 
 # With pagination
 page_2_response = requests.get(f"{url}?page=2", headers=headers)`;
         } else if (selectedCategory.name === "Search Movies") {
-          if (selectedEndpoint.endpoint === "/api/10bitclub/search") {
-            return `# Dedicated search with detailed results
+          return `# Search for movies and series
 import requests
 from urllib.parse import quote
 
-search_query = "avengers"
-url = f"${baseUrl}/api/10bitclub/search?q={quote(search_query)}"
+search_query = "spider man"
+url = f"${baseUrl}/api/kmmovies?search={quote(search_query)}"
 headers = {
     "x-api-key": "YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -355,30 +370,18 @@ headers = {
 
 response = requests.get(url, headers=headers)
 data = response.json()
-print(data["results"])  # Detailed search results with descriptions`;
-          } else {
-            return `# General search on 10BitClub
-import requests
-from urllib.parse import quote
+print(data["posts"])  # Search results
 
-search_query = "avengers"
-url = f"${baseUrl}/api/10bitclub?search={quote(search_query)}"
-headers = {
-    "x-api-key": "YOUR_API_KEY",
-    "Content-Type": "application/json"
-}
-
-response = requests.get(url, headers=headers)
-data = response.json()
-print(data["posts"])  # Search results`;
-          }
+# Check content type
+for post in data["posts"]:
+    print(f"{post['title']} - Type: {post['type']}")`;
         } else if (selectedCategory.name === "Movie Details") {
-          return `# Get movie details from 10BitClub
+          return `# Get detailed movie information
 import requests
 from urllib.parse import quote
 
-movie_url = "https://10bitclub.xyz/avengers-endgame-2019/"
-url = f"${baseUrl}/api/10bitclub/details?url={quote(movie_url)}"
+movie_url = "https://w1.kmmovies.mobi/spider-man-no-way-home-2021/"
+url = f"${baseUrl}/api/kmmovies/details?url={quote(movie_url)}"
 headers = {
     "x-api-key": "YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -386,7 +389,30 @@ headers = {
 
 response = requests.get(url, headers=headers)
 data = response.json()
-print(data["data"])  # Movie details with HubCloud links`;
+movie = data["data"]
+
+print("Title:", movie["title"])
+print("Storyline:", movie["storyline"])
+print("Download Links:", len(movie["downloadLinks"]))
+print("Languages:", movie["languages"])`;
+        } else if (selectedCategory.name === "Magic Links") {
+          return `# Extract links from Magic Links page
+import requests
+from urllib.parse import quote
+
+magic_url = "https://magiclinks.my/abc123"
+url = f"${baseUrl}/api/kmmovies/magic-links?url={quote(magic_url)}"
+headers = {
+    "x-api-key": "YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+response = requests.get(url, headers=headers)
+data = response.json()
+
+# Process different link types
+for link in data["data"]["links"]:
+    print(f"{link['provider']} - {link['type']} - {link['quality']}")`;
         } else if (selectedCategory.name === "HubCloud Links") {
           return `# Get HubCloud streaming links
 import requests
@@ -406,35 +432,33 @@ print(data["links"])  # Direct streaming/download links`;
 
       case "curl":
         if (selectedCategory.name === "Get Movies") {
-          return `# Get movies from 10BitClub
+          return `# Get movies and series from KMmovies
 curl -X GET \\
-  "${baseUrl}/api/10bitclub" \\
+  "${baseUrl}/api/kmmovies" \\
   -H "x-api-key: YOUR_API_KEY" \\
   -H "Content-Type: application/json"
 
 # With pagination
 curl -X GET \\
-  "${baseUrl}/api/10bitclub?page=2" \\
+  "${baseUrl}/api/kmmovies?page=2" \\
   -H "x-api-key: YOUR_API_KEY" \\
   -H "Content-Type: application/json"`;
         } else if (selectedCategory.name === "Search Movies") {
-          if (selectedEndpoint.endpoint === "/api/10bitclub/search") {
-            return `# Dedicated search with detailed results
+          return `# Search for movies and series
 curl -X GET \\
-  "${baseUrl}/api/10bitclub/search?q=avengers" \\
+  "${baseUrl}/api/kmmovies?search=spider%20man" \\
   -H "x-api-key: YOUR_API_KEY" \\
   -H "Content-Type: application/json"`;
-          } else {
-            return `# General search on 10BitClub
-curl -X GET \\
-  "${baseUrl}/api/10bitclub?search=avengers" \\
-  -H "x-api-key: YOUR_API_KEY" \\
-  -H "Content-Type: application/json"`;
-          }
         } else if (selectedCategory.name === "Movie Details") {
-          return `# Get movie details from 10BitClub
+          return `# Get detailed movie information
 curl -X GET \\
-  "${baseUrl}/api/10bitclub/details?url=https%3A//10bitclub.xyz/avengers-endgame-2019/" \\
+  "${baseUrl}/api/kmmovies/details?url=https%3A//w1.kmmovies.mobi/spider-man-no-way-home-2021/" \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json"`;
+        } else if (selectedCategory.name === "Magic Links") {
+          return `# Extract links from Magic Links page
+curl -X GET \\
+  "${baseUrl}/api/kmmovies/magic-links?url=https%3A//magiclinks.my/abc123" \\
   -H "x-api-key: YOUR_API_KEY" \\
   -H "Content-Type: application/json"`;
         } else if (selectedCategory.name === "HubCloud Links") {
@@ -458,142 +482,153 @@ curl -X GET \\
   "count": 20,
   "posts": [
     {
-      "imageUrl": "https://10bitclub.xyz/wp-content/uploads/2024/01/avengers-endgame.jpg",
-      "title": "Avengers: Endgame (2019) Tamil Dubbed Movie",
-      "postUrl": "https://10bitclub.xyz/avengers-endgame-2019/",
-      "rating": "8.4",
-      "year": "2019",
-      "quality": "1080p",
-      "featured": true
+      "id": "post-12345",
+      "imageUrl": "https://w1.kmmovies.mobi/wp-content/uploads/2024/01/spider-man.jpg",
+      "title": "Spider-Man: No Way Home (2021) Hindi Dubbed Movie",
+      "postUrl": "https://w1.kmmovies.mobi/spider-man-no-way-home-2021/",
+      "isSeries": false,
+      "type": "movie"
     },
     {
-      "imageUrl": "https://10bitclub.xyz/wp-content/uploads/2024/01/spider-man.jpg",
-      "title": "Spider-Man: No Way Home (2021) Tamil Dubbed",
-      "postUrl": "https://10bitclub.xyz/spider-man-no-way-home-2021/",
-      "rating": "8.2",
-      "year": "2021",
-      "quality": "720p",
-      "featured": false
+      "id": "post-12346",
+      "imageUrl": "https://w1.kmmovies.mobi/wp-content/uploads/2024/01/stranger-things.jpg",
+      "title": "Stranger Things S04 (2022) Complete Web Series",
+      "postUrl": "https://w1.kmmovies.mobi/stranger-things-s04-2022/",
+      "isSeries": true,
+      "type": "series"
     }
   ],
+  "searchQuery": null,
   "page": 1,
   "source": "page",
+  "website": "KMmovies",
   "remainingRequests": 95
 }`;
 
       case "Search Movies":
-        if (selectedEndpoint.endpoint === "/api/10bitclub/search") {
-          return `{
+        return `{
   "success": true,
-  "query": "avengers",
-  "count": 3,
-  "results": [
-    {
-      "title": "Avengers: Endgame (2019) Tamil Dubbed Movie",
-      "postUrl": "https://10bitclub.xyz/avengers-endgame-2019/",
-      "imageUrl": "https://10bitclub.xyz/wp-content/uploads/2024/01/avengers-endgame.jpg",
-      "contentType": "Movie",
-      "rating": "8.4",
-      "year": "2019",
-      "description": "After the devastating events of Avengers: Infinity War, the universe is in ruins. With the help of remaining allies, the Avengers assemble once more...",
-      "isTV": false,
-      "website": "10BitClub"
-    },
-    {
-      "title": "Scavengers Reign S01",
-      "postUrl": "https://10bitclub.xyz/tvshows/scavengers-reign-s01/",
-      "imageUrl": "https://10bitclub.xyz/wp-content/uploads/2023/12/bFlVZV8TQbs8hcIY7PVYonYFMgK-150x150.jpg",
-      "contentType": "TV Show",
-      "rating": "8.56",
-      "year": "2023",
-      "description": "When a deep space freighter is damaged by a solar flare its surviving crew are stranded on a beautiful and unforgiving planet. They begin to learn the true nature of this planet as they try to ...",
-      "isTV": true,
-      "website": "10BitClub"
-    }
-  ],
-  "website": "10BitClub",
-  "searchUrl": "https://10bitclub.xyz/?s=avengers",
-  "remainingRequests": 93
-}`;
-        } else {
-          return `{
-  "success": true,
-  "count": 5,
+  "count": 8,
   "posts": [
     {
-      "imageUrl": "https://10bitclub.xyz/wp-content/uploads/2024/01/avengers-endgame.jpg",
-      "title": "Avengers: Endgame (2019) Tamil Dubbed Movie",
-      "postUrl": "https://10bitclub.xyz/avengers-endgame-2019/",
-      "rating": "8.4",
-      "year": "2019",
-      "quality": "1080p",
-      "featured": true,
-      "contentType": "Movie"
+      "id": "post-12345",
+      "imageUrl": "https://w1.kmmovies.mobi/wp-content/uploads/2024/01/spider-man-nwh.jpg",
+      "title": "Spider-Man: No Way Home (2021) Hindi Dubbed Movie",
+      "postUrl": "https://w1.kmmovies.mobi/spider-man-no-way-home-2021/",
+      "isSeries": false,
+      "type": "movie"
     },
     {
-      "imageUrl": "https://10bitclub.xyz/wp-content/uploads/2023/12/avengers-infinity-war.jpg",
-      "title": "Avengers: Infinity War (2018) Tamil Dubbed",
-      "postUrl": "https://10bitclub.xyz/avengers-infinity-war-2018/",
-      "rating": "8.4",
-      "year": "2018",
-      "quality": "1080p",
-      "featured": false,
-      "contentType": "Movie"
+      "id": "post-12346",
+      "imageUrl": "https://w1.kmmovies.mobi/wp-content/uploads/2024/01/spider-man-ffh.jpg",
+      "title": "Spider-Man: Far From Home (2019) Hindi Dubbed",
+      "postUrl": "https://w1.kmmovies.mobi/spider-man-far-from-home-2019/",
+      "isSeries": false,
+      "type": "movie"
+    },
+    {
+      "id": "post-12347",
+      "imageUrl": "https://w1.kmmovies.mobi/wp-content/uploads/2024/01/spider-man-animated.jpg",
+      "title": "Spider-Man: Into the Spider-Verse (2018) Animation Movie",
+      "postUrl": "https://w1.kmmovies.mobi/spider-man-into-the-spider-verse-2018/",
+      "isSeries": false,
+      "type": "movie"
     }
   ],
-  "searchQuery": "avengers",
+  "searchQuery": "spider man",
+  "page": 1,
   "source": "search",
+  "website": "KMmovies",
   "remainingRequests": 94
 }`;
-        }
 
       case "Movie Details":
         return `{
   "success": true,
   "data": {
-    "title": "Avengers: Endgame (2019) Tamil Dubbed Movie",
-    "posterImage": "https://10bitclub.xyz/wp-content/uploads/2024/01/avengers-endgame.jpg",
-    "releaseDate": "2019",
-    "country": "USA",
-    "runtime": "181 min",
-    "rating": "8.4/10",
-    "synopsis": "After the devastating events of Avengers: Infinity War, the universe is in ruins. With the help of remaining allies, the Avengers assemble once more in order to reverse Thanos' actions and restore balance to the universe.",
-    "hubCloudSections": [
+    "title": "Spider-Man: No Way Home (2021) Hindi Dubbed Movie",
+    "mainImage": "https://w1.kmmovies.mobi/wp-content/uploads/2024/01/spider-man-nwh-poster.jpg",
+    "storyline": "With Spider-Man's identity now revealed, Peter asks Doctor Strange for help. When a spell goes wrong, dangerous foes from other worlds start to appear, forcing Peter to discover what it truly means to be Spider-Man.",
+    "releaseYear": "2021",
+    "director": "Jon Watts",
+    "cast": "Tom Holland, Zendaya, Benedict Cumberbatch, Jacob Batalon",
+    "genres": "Action, Adventure, Sci-Fi",
+    "duration": "148 min",
+    "writer": "Chris McKenna, Erik Sommers",
+    "ott": "Sony Pictures",
+    "isSeries": false,
+    "languages": ["Hindi", "English", "Dual Audio"],
+    "availableQualities": ["480p", "720p", "1080p"],
+    "downloadLinks": [
       {
-        "title": "Avengers Endgame (2019) Tamil Dubbed 1080p BluRay x264 2.8GB",
-        "quality": "1080p",
-        "fileSize": "2.8GB",
-        "language": "Tamil",
-        "hubCloudLinks": [
-          {
-            "url": "https://hubcloud.lol/file/abc123",
-            "text": "HubCloud Link 1"
-          },
-          {
-            "url": "https://hubcloud.lol/file/def456",
-            "text": "HubCloud Link 2"
-          }
-        ]
+        "url": "https://magiclinks.my/spider-man-480p",
+        "quality": "480p",
+        "size": "450MB",
+        "text": "FAST DOWNLOAD"
       },
       {
-        "title": "Avengers Endgame (2019) Tamil Dubbed 720p BluRay x264 1.4GB",
+        "url": "https://magiclinks.my/spider-man-720p",
         "quality": "720p",
-        "fileSize": "1.4GB",
-        "language": "Tamil",
-        "hubCloudLinks": [
-          {
-            "url": "https://hubcloud.lol/file/ghi789",
-            "text": "HubCloud Link 1"
-          }
-        ]
+        "size": "1.2GB",
+        "text": "FAST DOWNLOAD"
+      },
+      {
+        "url": "https://magiclinks.my/spider-man-1080p",
+        "quality": "1080p",
+        "size": "2.5GB",
+        "text": "FAST DOWNLOAD"
       }
     ],
-    "tags": ["Action", "Adventure", "Drama", "Sci-Fi"],
-    "totalHubCloudLinks": 3,
-    "downloadSectionsCount": 2
+    "screenshot": "https://w1.kmmovies.mobi/wp-content/uploads/2024/01/spider-man-screenshot.jpg",
+    "imdbRating": {
+      "text": "8.2/10",
+      "url": "https://www.imdb.com/"
+    },
+    "sourceUrl": "https://w1.kmmovies.mobi/spider-man-no-way-home-2021/"
   },
-  "sourceUrl": "https://10bitclub.xyz/avengers-endgame-2019/",
+  "website": "KMmovies",
   "remainingRequests": 93
+}`;
+
+      case "Magic Links":
+        return `{
+  "success": true,
+  "data": {
+    "links": [
+      {
+        "type": "stream",
+        "provider": "Watch Online",
+        "url": "https://example.com/stream/spider-man-nwh.mp4",
+        "quality": "Stream",
+        "description": "Direct video stream URL"
+      },
+      {
+        "type": "stream",
+        "provider": "SkyTech",
+        "url": "https://skytech-stream.com/spider-man-nwh-720p.mp4",
+        "quality": "Stream",
+        "description": "Direct video stream URL from SkyTech"
+      },
+      {
+        "type": "hubcloud",
+        "provider": "HUBCLOUD",
+        "url": "https://hubcloud.lol/file/spider-man-abc123",
+        "quality": "Stream",
+        "description": "HubCloud streaming link"
+      },
+      {
+        "type": "download",
+        "provider": "GDFLIX",
+        "url": "https://gdflix.lol/file/spider-man-def456",
+        "quality": "Download",
+        "description": "Google Drive based download (will be processed for direct links)"
+      }
+    ],
+    "sourceUrl": "https://magiclinks.my/spider-man-nwh",
+    "totalFound": 4
+  },
+  "website": "Magic Links",
+  "remainingRequests": 92
 }`;
 
       case "HubCloud Links":
@@ -602,32 +637,40 @@ curl -X GET \\
   "links": [
     {
       "quality": "1080p",
-      "size": "2.8GB",
-      "link": "https://gpdl.hubcdn.fans/d/abc123/Avengers-Endgame-2019-Tamil-1080p.mp4",
+      "size": "2.5GB",
+      "link": "https://gpdl.hubcdn.fans/d/abc123/Spider-Man-NWH-2021-Hindi-1080p.mp4",
       "server": "HubCloud Server 1",
       "type": "MP4",
       "isDirect": true
     },
     {
       "quality": "1080p",
-      "size": "2.8GB",
-      "link": "https://gpdl2.hubcdn.fans/d/abc123/Avengers-Endgame-2019-Tamil-1080p.mp4",
+      "size": "2.5GB",
+      "link": "https://gpdl2.hubcdn.fans/d/abc123/Spider-Man-NWH-2021-Hindi-1080p.mp4",
       "server": "HubCloud Server 2",
       "type": "MP4",
       "isDirect": true
     },
     {
       "quality": "720p",
-      "size": "1.4GB",
-      "link": "https://gpdl.hubcdn.fans/d/abc123/Avengers-Endgame-2019-Tamil-720p.mp4",
+      "size": "1.2GB",
+      "link": "https://gpdl.hubcdn.fans/d/abc123/Spider-Man-NWH-2021-Hindi-720p.mp4",
+      "server": "HubCloud Server 1",
+      "type": "MP4",
+      "isDirect": true
+    },
+    {
+      "quality": "480p",
+      "size": "450MB",
+      "link": "https://gpdl.hubcdn.fans/d/abc123/Spider-Man-NWH-2021-Hindi-480p.mp4",
       "server": "HubCloud Server 1",
       "type": "MP4",
       "isDirect": true
     }
   ],
-  "totalLinks": 3,
+  "totalLinks": 4,
   "sourceUrl": "https://hubcloud.lol/file/abc123",
-  "remainingRequests": 92
+  "remainingRequests": 91
 }`;
 
       default:
@@ -654,11 +697,11 @@ curl -X GET \\
         <Card>
           <CardHeader className="pb-4 sm:pb-6">
             <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-              <Film className="h-5 w-5 text-blue-500" />
-              10BitClub API Testing
+              <Film className="h-5 w-5 text-emerald-500" />
+              KMmovies API Testing
             </CardTitle>
             <CardDescription className="text-sm">
-              Enter your API key to test the 10BitClub endpoints. Get your API key from the{" "}
+              Enter your API key to test the KMmovies endpoints. Get your API key from the{" "}
               <a href="/dashboard/api-keys" className="text-primary hover:underline">
                 API Keys page
               </a>
@@ -695,7 +738,7 @@ curl -X GET \\
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {tenBitClubApiCategories.map((category) => (
+                    {kmMoviesApiCategories.map((category) => (
                       <SelectItem key={category.name} value={category.name} className="text-sm">
                         <div className="flex items-center gap-2">
                           <div className={`w-3 h-3 rounded-full ${category.color}`}></div>
@@ -796,11 +839,11 @@ curl -X GET \\
         <Card>
           <CardHeader className="pb-4 sm:pb-6">
             <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-              <Film className="h-5 w-5 text-blue-500" />
-              10BitClub API Examples
+              <Film className="h-5 w-5 text-emerald-500" />
+              KMmovies API Examples
             </CardTitle>
             <CardDescription className="text-sm">
-              Code examples for integrating with our 10BitClub API
+              Code examples for integrating with our KMmovies API
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 sm:space-y-6">
@@ -812,7 +855,7 @@ curl -X GET \\
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {tenBitClubApiCategories.map((category) => (
+                    {kmMoviesApiCategories.map((category) => (
                       <SelectItem key={category.name} value={category.name} className="text-sm">
                         <div className="flex items-center gap-2">
                           <div className={`w-3 h-3 rounded-full ${category.color}`}></div>
@@ -863,7 +906,7 @@ curl -X GET \\
                         <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
                         <div className="w-3 h-3 rounded-full bg-[#27ca3f]"></div>
                       </div>
-                      <span className="text-gray-300 text-sm ml-2 truncate">10bitclub.js</span>
+                      <span className="text-gray-300 text-sm ml-2 truncate">kmmovies.js</span>
                     </div>
                     <Button
                       size="sm"
@@ -893,7 +936,7 @@ curl -X GET \\
                         <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
                         <div className="w-3 h-3 rounded-full bg-[#27ca3f]"></div>
                       </div>
-                      <span className="text-gray-300 text-sm ml-2 truncate">10bitclub.py</span>
+                      <span className="text-gray-300 text-sm ml-2 truncate">kmmovies.py</span>
                     </div>
                     <Button
                       size="sm"
@@ -950,14 +993,15 @@ curl -X GET \\
         <Card>
           <CardHeader className="pb-4 sm:pb-6">
             <CardTitle className="text-lg sm:text-xl">Response Examples</CardTitle>
-            <CardDescription className="text-sm">Expected response structures for 10BitClub endpoints</CardDescription>
+            <CardDescription className="text-sm">Expected response structures for KMmovies endpoints</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Tabs defaultValue="movies" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="movies" className="text-xs sm:text-sm">Movies List</TabsTrigger>
-                <TabsTrigger value="search" className="text-xs sm:text-sm">Search Results</TabsTrigger>
-                <TabsTrigger value="details" className="text-xs sm:text-sm">Movie Details</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="movies" className="text-xs sm:text-sm">Movies</TabsTrigger>
+                <TabsTrigger value="search" className="text-xs sm:text-sm">Search</TabsTrigger>
+                <TabsTrigger value="details" className="text-xs sm:text-sm">Details</TabsTrigger>
+                <TabsTrigger value="magic" className="text-xs sm:text-sm">Magic</TabsTrigger>
                 <TabsTrigger value="hubcloud" className="text-xs sm:text-sm">HubCloud</TabsTrigger>
               </TabsList>
 
@@ -973,10 +1017,42 @@ curl -X GET \\
                 <ColorizedJSON data={getResponseExample("Movie Details")} title="movie-details" />
               </TabsContent>
 
+              <TabsContent value="magic">
+                <ColorizedJSON data={getResponseExample("Magic Links")} title="magic-links" />
+              </TabsContent>
+
               <TabsContent value="hubcloud">
                 <ColorizedJSON data={getResponseExample("HubCloud Links")} title="hubcloud-links" />
               </TabsContent>
             </Tabs>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-4 sm:pb-6">
+            <CardTitle className="text-lg sm:text-xl">API Workflow</CardTitle>
+            <CardDescription className="text-sm">Complete workflow for accessing movie content through KMmovies</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-3 sm:p-4 bg-muted rounded-lg">
+              <h4 className="font-semibold mb-2 text-sm sm:text-base">Step-by-Step Process</h4>
+              <ol className="text-xs sm:text-sm space-y-2">
+                <li><strong>1. Browse/Search:</strong> Use <code>/api/kmmovies</code> to get movie lists or search for specific titles</li>
+                <li><strong>2. Get Details:</strong> Use <code>/api/kmmovies/details</code> with movie URL to get complete information and download links</li>
+                <li><strong>3. Process Magic Links:</strong> Use <code>/api/kmmovies/magic-links</code> to extract streaming/download options from Magic Links pages</li>
+                <li><strong>4. Get Direct Links:</strong> Use <code>/api/hubcloud</code> with HubCloud URLs to get direct streaming/download links</li>
+              </ol>
+              <div className="mt-3 p-2 sm:p-3 bg-emerald-100 dark:bg-emerald-900/20 rounded-md">
+                <p className="text-xs text-emerald-800 dark:text-emerald-200">
+                  <strong>KMmovies Advantage:</strong> Provides both movies and TV series with detailed information including cast, director, storyline, and multiple quality options.
+                </p>
+              </div>
+              <div className="mt-3 p-2 sm:p-3 bg-blue-100 dark:bg-blue-900/20 rounded-md">
+                <p className="text-xs text-blue-800 dark:text-blue-200">
+                  <strong>Magic Links:</strong> Magic Links pages contain multiple streaming and download options. The API extracts all available links including Watch Online, SkyTech, HubCloud, and GDFLIX options.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </TabsContent>
