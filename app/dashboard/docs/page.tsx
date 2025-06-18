@@ -12,6 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, Play, Key, Code2, ExternalLink, Home, Search, Film, Video, FileVideo } from "lucide-react";
 import { toast } from "sonner";
 import MoviesDocs from "@/components/ui/movies-docs";
+import AllMoviesDocs from "@/components/ui/allmovies-docs";
+import TenBitClubDocs from "@/components/ui/10bitclub-docs";
 
 interface ApiEndpoint {
   method: string;
@@ -373,13 +375,21 @@ curl -X GET \\
                     Movies API
                   </div>
                 </SelectItem>
+                <SelectItem value="allmovies" className="text-sm">
+                  <div className="flex items-center gap-2">
+                    <Film className="h-4 w-4" />
+                    AllMoviesHub API
+                  </div>
+                </SelectItem>
+                <SelectItem value="10bitclub" className="text-sm">
+                  <div className="flex items-center gap-2">
+                    <Film className="h-4 w-4" />
+                    10BitClub API
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
-          {/* <Badge variant="secondary" className="flex items-center gap-2 text-xs sm:text-sm shrink-0">
-            <Key className="h-3 w-3 sm:h-4 sm:w-4" />
-            API v1.0
-          </Badge> */}
         </div>
       </div>
 
@@ -901,9 +911,21 @@ curl -X GET \\
             </Card>
           </TabsContent>
         </Tabs>
-      ) : (
+      ) : selectedApiType === "movies" ? (
         <div className="w-full overflow-hidden">
           <MoviesDocs apiKey={apiKey} onApiKeyChange={setApiKey} />
+        </div>
+      ) : selectedApiType === "allmovies" ? (
+        <div className="w-full overflow-hidden">
+          <AllMoviesDocs apiKey={apiKey} onApiKeyChange={setApiKey} />
+        </div>
+      ) : selectedApiType === "10bitclub" ? (
+        <div className="w-full overflow-hidden">
+          <TenBitClubDocs apiKey={apiKey} onApiKeyChange={setApiKey} />
+        </div>
+      ) : (
+        <div className="w-full overflow-hidden">
+          <AllMoviesDocs apiKey={apiKey} onApiKeyChange={setApiKey} />
         </div>
       )}
     </div>
