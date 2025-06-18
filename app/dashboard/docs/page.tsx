@@ -16,6 +16,7 @@ import AllMoviesDocs from "@/components/ui/allmovies-docs";
 import TenBitClubDocs from "@/components/ui/10bitclub-docs";
 import KMmoviesDocs from "@/components/ui/kmmovies-docs";
 import DesireMoviesDocs from "@/components/ui/desiremovies-docs";
+import VidSrcDocs from "@/components/ui/vidsrc-docs";
 
 interface ApiEndpoint {
   method: string;
@@ -405,6 +406,12 @@ curl -X GET \\
                   <div className="flex items-center gap-2">
                     <Film className="h-4 w-4" />
                     DesireMovies API
+                  </div>
+                </SelectItem>
+                <SelectItem value="vidsrc" className="text-sm">
+                  <div className="flex items-center gap-2">
+                    <Video className="h-4 w-4" />
+                    VidSrc API
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -954,6 +961,10 @@ curl -X GET \\
       ) : selectedApiType === "desiremovies" ? (
         <div className="w-full overflow-hidden">
           <DesireMoviesDocs apiKey={apiKey} onApiKeyChange={setApiKey} />
+        </div>
+      ) : selectedApiType === "vidsrc" ? (
+        <div className="w-full overflow-hidden">
+          <VidSrcDocs apiKey={apiKey} onApiKeyChange={setApiKey} />
         </div>
       ) : (
         <div className="w-full overflow-hidden">
