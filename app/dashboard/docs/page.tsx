@@ -23,6 +23,7 @@ import HDHub4uDocs from "@/components/ui/hdhub4u-docs";
 import FilmyFlyDocs from "@/components/ui/filmyfly-docs";
 import MoviesWorldDocs from "@/components/ui/moviesworld-docs";
 import ShowboxDocs from "@/components/ui/showbox-docs";
+import ZinkMoviesDocs from "@/components/ui/zinkmovies-docs";
 
 interface ApiEndpoint {
   method: string;
@@ -448,6 +449,12 @@ curl -X GET \\
                   <div className="flex items-center gap-2">
                     <Video className="h-4 w-4" />
                     Showbox API
+                  </div>
+                </SelectItem>
+                <SelectItem value="zinkmovies" className="text-sm">
+                  <div className="flex items-center gap-2">
+                    <Video className="h-4 w-4" />
+                    ZinkMovies API
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -1025,6 +1032,10 @@ curl -X GET \\
       ) : selectedApiType === "showbox" ? (
         <div className="w-full overflow-hidden">
           <ShowboxDocs apiKey={apiKey} onApiKeyChange={setApiKey} />
+        </div>
+      ) : selectedApiType === "zinkmovies" ? (
+        <div className="w-full overflow-hidden">
+          <ZinkMoviesDocs apiKey={apiKey} onApiKeyChange={setApiKey} />
         </div>
       ) : (
         <div className="w-full overflow-hidden">
