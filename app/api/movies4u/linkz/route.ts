@@ -68,7 +68,7 @@ async function scrapeLinkzDownloads(url: string): Promise<{ title?: string; down
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
         'Cookie': '_ga=GA1.1.1329310552.1748938362; _ga_2B2ZRKQW02=GS2.1.s1750682200$o6$g0$t1750682200$j60$l0$h0',
-        'Referer': 'https://linkz.mom/',
+        
       },
       next: { revalidate: 0 }
     });
