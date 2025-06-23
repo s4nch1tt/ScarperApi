@@ -43,35 +43,49 @@ export async function GET(request: NextRequest): Promise<NextResponse<ShowboxSer
     }
 
     const { searchParams } = new URL(request.url);
-    const episodeId = searchParams.get('episode_id') || searchParams.get('epsid');
-    const fileId = searchParams.get('file_id') || searchParams.get('fid');
+    const episodeId = searchParams.get('episode_id') || searchParams.get('id');
 
     if (!episodeId) {
       return NextResponse.json<ShowboxSeriesResponse>(
         { 
           success: false, 
           error: 'Episode ID is required',
-          message: 'Please provide an episode_id or epsid parameter'
+          message: 'Please provide an episode_id parameter (e.g., vzqprWJd&2798715)'
         },
         { status: 400 }
       );
     }
 
-    if (!fileId) {
+    // Check if episodeId contains & to extract share_key and file_id
+    if (!episodeId.includes('&')) {
       return NextResponse.json<ShowboxSeriesResponse>(
         { 
           success: false, 
-          error: 'File ID is required',
-          message: 'Please provide a file_id or fid parameter'
+          error: 'Invalid episode ID format',
+          message: 'Episode ID must contain & separator (e.g., vzqprWJd&2798715)'
         },
         { status: 400 }
       );
     }
 
-    console.log('Processing TV series request for Episode ID:', episodeId, 'File ID:', fileId);
+    const [shareKey, fileId] = episodeId.split('&');
+
+    if (!shareKey || !fileId) {
+      return NextResponse.json<ShowboxSeriesResponse>(
+        { 
+          success: false, 
+          error: 'Invalid episode ID format',
+          message: 'Episode ID must be in format: shareKey&fileId (e.g., vzqprWJd&2798715)'
+        },
+        { status: 400 }
+      );
+    }
+
+    console.log('Processing TV series request for Episode ID:', episodeId);
+    console.log('Extracted - Share Key:', shareKey, 'File ID:', fileId);
 
     // Create the febbox URL as requested
-    const febboxUrl = `https://www.febbox.com/file/file_share_list?share_key=${episodeId}&pwd=&parent_id=${fileId}&is_html=0`;
+    const febboxUrl = `https://www.febbox.com/file/file_share_list?share_key=${shareKey}&pwd=&parent_id=${fileId}&is_html=0`;
     console.log('Constructed febbox URL:', febboxUrl);
 
     const response = await fetch(febboxUrl, { headers });

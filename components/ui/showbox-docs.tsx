@@ -68,10 +68,9 @@ const showboxApiCategories: ApiCategory[] = [
       {
         method: "GET",
         endpoint: "/api/showbox/series",
-        description: "Get TV series episodes using episode ID and file ID (specifically for TV shows)",
+        description: "Get TV series episodes using episode ID (specifically for TV shows)",
         params: [
-          { name: "episode_id", type: "string", required: true, description: "Episode share key (e.g., vzqprWJd)" },
-          { name: "file_id", type: "string", required: true, description: "File/parent ID (e.g., 2798715)" }
+          { name: "episode_id", type: "string", required: true, description: "Episode ID with share key and file ID (e.g., vzqprWJd&2798715)" }
         ]
       }
     ]
@@ -229,9 +228,8 @@ const episodesLink = data.data.linkList[0].episodesLink; // e.g., "vzqprWJd&2798
         } else if (selectedCategory.name === "TV Series Episodes") {
           return `// Get TV series episodes (Step 2 - For TV Shows)
 const episodesLink = "vzqprWJd&2798715"; // from details
-const [episodeId, fileId] = episodesLink.split('&');
 
-const response = await fetch("${baseUrl}/api/showbox/series?episode_id=" + episodeId + "&file_id=" + fileId, {
+const response = await fetch("${baseUrl}/api/showbox/series?episode_id=" + encodeURIComponent(episodesLink), {
   headers: {
     "x-api-key": "YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -304,11 +302,11 @@ print(data["data"]["linkList"])  # File links`;
         } else if (selectedCategory.name === "TV Series Episodes") {
           return `# Get TV series episodes (Step 2 - For TV Shows)
 import requests
+from urllib.parse import quote
 
 episodes_link = "vzqprWJd&2798715"  # from details
-episode_id, file_id = episodes_link.split('&')
 
-url = f"${baseUrl}/api/showbox/series?episode_id={episode_id}&file_id={file_id}"
+url = f"${baseUrl}/api/showbox/series?episode_id={quote(episodes_link)}"
 headers = {
     "x-api-key": "YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -364,7 +362,7 @@ curl -X GET \\
         } else if (selectedCategory.name === "TV Series Episodes") {
           return `# Get TV series episodes (Step 2 - For TV Shows)
 curl -X GET \\
-  "${baseUrl}/api/showbox/series?episode_id=vzqprWJd&file_id=2798715" \\
+  "${baseUrl}/api/showbox/series?episode_id=vzqprWJd%262798715" \\
   -H "x-api-key: YOUR_API_KEY" \\
   -H "Content-Type: application/json"`;
         } else if (selectedCategory.name === "Episode Files") {
