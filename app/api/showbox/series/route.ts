@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateApiKey, createUnauthorizedResponse } from '@/lib/middleware/api-auth';
 
-interface ShowboxEpisodeResponse {
+interface ShowboxSeriesResponse {
   success: boolean;
   data?: any;
   error?: string;
@@ -34,81 +34,68 @@ const headers = {
   'Referrer-Policy': 'strict-origin-when-cross-origin',
 };
 
-export async function GET(request: NextRequest): Promise<NextResponse<ShowboxEpisodeResponse>> {
+export async function GET(request: NextRequest): Promise<NextResponse<ShowboxSeriesResponse>> {
   try {
     // Validate API key
     const authResult = await validateApiKey(request);
     if (!authResult.isValid) {
-      return createUnauthorizedResponse(authResult.error || 'Invalid API key') as NextResponse<ShowboxEpisodeResponse>;
+      return createUnauthorizedResponse(authResult.error || 'Invalid API key') as NextResponse<ShowboxSeriesResponse>;
     }
 
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-    const url = searchParams.get('url');
+    const episodeId = searchParams.get('episode_id') || searchParams.get('epsid');
+    const fileId = searchParams.get('file_id') || searchParams.get('fid');
 
-    if (!id && !url) {
-      return NextResponse.json<ShowboxEpisodeResponse>(
+    if (!episodeId) {
+      return NextResponse.json<ShowboxSeriesResponse>(
         { 
           success: false, 
-          error: 'ID or URL is required',
-          message: 'Please provide either a valid ID parameter or URL parameter'
+          error: 'Episode ID is required',
+          message: 'Please provide an episode_id or epsid parameter'
         },
         { status: 400 }
       );
     }
 
-    console.log('Processing Showbox episodes request for ID:', id, 'URL:', url);
-
-    let febboxUrl: string;
-
-    // Handle TV show URLs directly
-    if (url && url.includes('/tv/')) {
-      console.log('Processing TV show URL:', url);
-      
-      // Extract episode ID and file ID from the ID parameter
-      // Format should be: episodeid&fileid
-      if (id && id.includes('&')) {
-        const [episodeId, fileId] = id.split('&');
-        febboxUrl = `https://www.febbox.com/file/file_share_list?share_key=${episodeId}&pwd=&parent_id=${fileId}&is_html=0`;
-        console.log('Constructed TV show febbox URL:', febboxUrl);
-      } else {
-        return NextResponse.json<ShowboxEpisodeResponse>(
-          { 
-            success: false, 
-            error: 'Invalid TV show ID format',
-            message: 'For TV shows, ID must be in format: episodeid&fileid'
-          },
-          { status: 400 }
-        );
-      }
-    } else {
-      // Original movie/general logic
-      febboxUrl = `https://www.febbox.com/file/file_share_list?share_key=${id}&is_html=0`;
-      console.log('Constructed movie febbox URL:', febboxUrl);
+    if (!fileId) {
+      return NextResponse.json<ShowboxSeriesResponse>(
+        { 
+          success: false, 
+          error: 'File ID is required',
+          message: 'Please provide a file_id or fid parameter'
+        },
+        { status: 400 }
+      );
     }
+
+    console.log('Processing TV series request for Episode ID:', episodeId, 'File ID:', fileId);
+
+    // Create the febbox URL as requested
+    const febboxUrl = `https://www.febbox.com/file/file_share_list?share_key=${episodeId}&pwd=&parent_id=${fileId}&is_html=0`;
+    console.log('Constructed febbox URL:', febboxUrl);
 
     const response = await fetch(febboxUrl, { headers });
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch: ${response.status}`);
+      throw new Error(`Failed to fetch from febbox: ${response.status}`);
     }
     
     const data = await response.json();
     console.log('Febbox response:', data);
 
-    return NextResponse.json<ShowboxEpisodeResponse>({
+    return NextResponse.json<ShowboxSeriesResponse>({
       success: true,
       data: data,
       remainingRequests: authResult.apiKey ? (authResult.apiKey.requestsLimit - authResult.apiKey.requestsUsed) : 0
     });
 
   } catch (error: unknown) {
-    console.error('Showbox episodes API error:', error);
+    console.error('Showbox series API error:', error);
     
-    return NextResponse.json<ShowboxEpisodeResponse>(
+    return NextResponse.json<ShowboxSeriesResponse>(
       { 
         success: false, 
-        error: 'Failed to fetch episode links',
+        error: 'Failed to fetch series episodes',
         message: error instanceof Error ? error.message : 'Unknown error occurred'
       },
       { status: 500 }

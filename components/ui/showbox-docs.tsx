@@ -61,6 +61,22 @@ const showboxApiCategories: ApiCategory[] = [
     ]
   },
   {
+    name: "TV Series Episodes",
+    icon: <Video className="h-4 w-4" />,
+    color: "bg-red-500",
+    endpoints: [
+      {
+        method: "GET",
+        endpoint: "/api/showbox/series",
+        description: "Get TV series episodes using episode ID and file ID (specifically for TV shows)",
+        params: [
+          { name: "episode_id", type: "string", required: true, description: "Episode share key (e.g., vzqprWJd)" },
+          { name: "file_id", type: "string", required: true, description: "File/parent ID (e.g., 2798715)" }
+        ]
+      }
+    ]
+  },
+  {
     name: "Episode Files",
     icon: <Video className="h-4 w-4" />,
     color: "bg-purple-500",
@@ -209,9 +225,25 @@ const response = await fetch("${baseUrl}/api/showbox/details?url=" + encodeURICo
 const data = await response.json();
 console.log(data.data.linkList); // File links
 // Use episodesLink for next step
-const episodesLink = data.data.linkList[0].episodesLink; // e.g., "Dl28MRMd&"`;
+const episodesLink = data.data.linkList[0].episodesLink; // e.g., "vzqprWJd&2798715"`;
+        } else if (selectedCategory.name === "TV Series Episodes") {
+          return `// Get TV series episodes (Step 2 - For TV Shows)
+const episodesLink = "vzqprWJd&2798715"; // from details
+const [episodeId, fileId] = episodesLink.split('&');
+
+const response = await fetch("${baseUrl}/api/showbox/series?episode_id=" + episodeId + "&file_id=" + fileId, {
+  headers: {
+    "x-api-key": "YOUR_API_KEY",
+    "Content-Type": "application/json"
+  }
+});
+
+const data = await response.json();
+console.log(data.data.file_list); // List of TV episodes
+// Use file ID for streaming
+const fileId = data.data.file_list[0].fid;`;
         } else if (selectedCategory.name === "Episode Files") {
-          return `// Get episode files (Step 2)
+          return `// Get episode files (Step 2 - For Movies)
 const fileShareKey = "Dl28MRMd"; // from details episodesLink
 const response = await fetch("${baseUrl}/api/showbox/episodes?id=" + fileShareKey, {
   headers: {
@@ -269,8 +301,24 @@ headers = {
 response = requests.get(url, headers=headers)
 data = response.json()
 print(data["data"]["linkList"])  # File links`;
+        } else if (selectedCategory.name === "TV Series Episodes") {
+          return `# Get TV series episodes (Step 2 - For TV Shows)
+import requests
+
+episodes_link = "vzqprWJd&2798715"  # from details
+episode_id, file_id = episodes_link.split('&')
+
+url = f"${baseUrl}/api/showbox/series?episode_id={episode_id}&file_id={file_id}"
+headers = {
+    "x-api-key": "YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+response = requests.get(url, headers=headers)
+data = response.json()
+print(data["data"]["file_list"])  # List of TV episodes`;
         } else if (selectedCategory.name === "Episode Files") {
-          return `# Get episode files (Step 2)
+          return `# Get episode files (Step 2 - For Movies)
 import requests
 
 file_share_key = "Dl28MRMd"  # from details episodesLink
@@ -311,6 +359,12 @@ curl -X GET \\
           return `# Get movie/TV details (Step 1)
 curl -X GET \\
   "${baseUrl}/api/showbox/details?url=https%3A//www.showbox.media/movie/m-avengers-endgame" \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json"`;
+        } else if (selectedCategory.name === "TV Series Episodes") {
+          return `# Get TV series episodes (Step 2 - For TV Shows)
+curl -X GET \\
+  "${baseUrl}/api/showbox/series?episode_id=vzqprWJd&file_id=2798715" \\
   -H "x-api-key: YOUR_API_KEY" \\
   -H "Content-Type: application/json"`;
         } else if (selectedCategory.name === "Episode Files") {

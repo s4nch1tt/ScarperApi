@@ -68,7 +68,7 @@ async function sbGetInfo(link: string): Promise<{
     const data = await res.text();
     const $ = load(data);
     
-    const type = url.includes('tv') ? 'series' : 'movie';
+    const type = url.includes('/tv/') ? 'series' : 'movie';
     const imdbId = '';
     const title = $('.heading-name').text();
     
@@ -87,9 +87,10 @@ async function sbGetInfo(link: string): Promise<{
     const febID = $('.heading-name').find('a').attr('href')?.split('/')?.pop();
     const baseUrl = url.split('/').slice(0, 3).join('/');
     const indexUrl = `${baseUrl}/index/share_link?id=${febID}&type=${
-      type === 'movie' ? '1' : '2'
+      type === 'series' ? '2' : '1'
     }`;
 
+    console.log('Fetching index from:', indexUrl);
     const indexRes = await fetch(indexUrl, { headers });
     
     if (!indexRes.ok) {
@@ -97,9 +98,20 @@ async function sbGetInfo(link: string): Promise<{
     }
     
     const indexData = await indexRes.json();
+    console.log('Index data:', indexData);
     const febKey = indexData.data.link.split('/').pop();
 
-    const febLink = `https://www.febbox.com/file/file_share_list?share_key=${febKey}&is_html=0`;
+    let febLink: string;
+    
+    // For TV shows, use the correct febbox URL format
+    if (type === 'series') {
+      febLink = `https://www.febbox.com/file/file_share_list?share_key=${febKey}&pwd=&parent_id=&is_html=0`;
+      console.log('TV show febbox URL:', febLink);
+    } else {
+      febLink = `https://www.febbox.com/file/file_share_list?share_key=${febKey}&is_html=0`;
+      console.log('Movie febbox URL:', febLink);
+    }
+
     const febRes = await fetch(febLink, { headers });
     
     if (!febRes.ok) {
@@ -107,6 +119,7 @@ async function sbGetInfo(link: string): Promise<{
     }
     
     const febData = await febRes.json();
+    console.log('Febbox data:', febData);
     const fileList = febData?.data?.file_list;
 
     const links: Link[] = [];
@@ -114,10 +127,19 @@ async function sbGetInfo(link: string): Promise<{
       fileList.map((file: any) => {
         const fileName = `${file.file_name} (${file.file_size})`;
         const fileId = file.fid;
-        links.push({
-          title: fileName,
-          episodesLink: file.is_dir ? `${febKey}&${fileId}` : `${febKey}&`,
-        });
+        
+        // For TV shows, format the episodesLink differently
+        if (type === 'series') {
+          links.push({
+            title: fileName,
+            episodesLink: file.is_dir ? `${febKey}&${fileId}` : `${febKey}&${fileId}`,
+          });
+        } else {
+          links.push({
+            title: fileName,
+            episodesLink: file.is_dir ? `${febKey}&${fileId}` : `${febKey}&`,
+          });
+        }
       });
     }
 
@@ -131,7 +153,7 @@ async function sbGetInfo(link: string): Promise<{
       linkList: links,
     };
   } catch (err) {
-    console.error(err);
+    console.error('sbGetInfo error:', err);
     return {
       title: '',
       rating: '',
