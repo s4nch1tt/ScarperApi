@@ -386,12 +386,7 @@ curl -X GET \\
                     Movies API
                   </div>
                 </SelectItem>
-                <SelectItem value="allmovies" className="text-sm">
-                  <div className="flex items-center gap-2">
-                    <Film className="h-4 w-4" />
-                    AllMoviesHub API
-                  </div>
-                </SelectItem>
+                 
                 <SelectItem value="10bitclub" className="text-sm">
                   <div className="flex items-center gap-2">
                     <Film className="h-4 w-4" />
