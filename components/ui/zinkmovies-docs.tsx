@@ -56,6 +56,20 @@ const apiCategories: ApiCategory[] = [
     ]
   },
   {
+    name: "JioStar Episodes",
+    icon: <Download className="h-4 w-4" />,
+    endpoints: [
+      {
+        method: "GET",
+        endpoint: "/api/zinkmovies/jio",
+        description: "Extract episode download links from JioStar pages",
+        params: [
+          { name: "url", type: "string", required: true, description: "JioStar URL (e.g., https://jiostar.work/3499)" }
+        ]
+      }
+    ]
+  },
+  {
     name: "Mirror Links",
     icon: <Link className="h-4 w-4" />,
     endpoints: [
@@ -187,7 +201,21 @@ const response = await fetch("${baseUrl}/api/zinkmovies/details?url=" + encodeUR
 
 const data = await response.json();
 console.log(data.data.playerUrl); // Streaming URL
-console.log(data.data.downloadLinks); // Download links`;
+console.log(data.data.downloadLinks); // Download links
+console.log(data.data.jioStarLinks); // JioStar episode links`;
+        } else if (selectedCategory.name === "JioStar Episodes") {
+          return `// Extract episodes from JioStar pages
+const jioStarUrl = "https://jiostar.work/3499";
+const response = await fetch("${baseUrl}/api/zinkmovies/jio?url=" + encodeURIComponent(jioStarUrl), {
+  headers: {
+    "x-api-key": "YOUR_API_KEY",
+    "Content-Type": "application/json"
+  }
+});
+
+const data = await response.json();
+console.log(data.data.episodes); // Array of episode download links
+console.log(data.data.totalEpisodes); // Total number of episodes`;
         } else {
           return `// Extract HubCloud mirror links
 const videoSaverUrl = "https://videosaver.me/file/db6d60224badcdbc";
@@ -233,7 +261,24 @@ headers = {
 response = requests.get(url, headers=headers)
 data = response.json()
 print(data["data"]["playerUrl"])  # Streaming URL
-print(data["data"]["downloadLinks"])  # Download links`;
+print(data["data"]["downloadLinks"])  # Download links
+print(data["data"]["jioStarLinks"])  # JioStar episode links`;
+        } else if (selectedCategory.name === "JioStar Episodes") {
+          return `# Extract episodes from JioStar pages
+import requests
+from urllib.parse import quote
+
+jiostar_url = "https://jiostar.work/3499"
+url = f"${baseUrl}/api/zinkmovies/jio?url={quote(jiostar_url)}"
+headers = {
+    "x-api-key": "YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+response = requests.get(url, headers=headers)
+data = response.json()
+print(data["data"]["episodes"])  # Array of episode download links
+print(data["data"]["totalEpisodes"])  # Total number of episodes`;
         } else {
           return `# Extract HubCloud mirror links
 import requests
@@ -262,6 +307,12 @@ curl -X GET \\
           return `# Get movie/TV show details
 curl -X GET \\
   "${baseUrl}/api/zinkmovies/details?url=https%3A%2F%2Fzinkmovies.autos%2Fmovies%2Favengers-endgame" \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json"`;
+        } else if (selectedCategory.name === "JioStar Episodes") {
+          return `# Extract episodes from JioStar pages
+curl -X GET \\
+  "${baseUrl}/api/zinkmovies/jio?url=https%3A%2F%2Fjiostar.work%2F3499" \\
   -H "x-api-key: YOUR_API_KEY" \\
   -H "Content-Type: application/json"`;
         } else {
@@ -545,11 +596,17 @@ curl -X GET \\
                   <div className="flex items-start gap-3">
                     <Badge variant="outline" className="text-xs shrink-0">2</Badge>
                     <div>
-                      <strong>Details:</strong> Use <code>/api/zinkmovies/details?url=postUrl</code> to get player URL and download links
+                      <strong>Details:</strong> Use <code>/api/zinkmovies/details?url=postUrl</code> to get player URL and JioStar links
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <Badge variant="outline" className="text-xs shrink-0">3</Badge>
+                    <div>
+                      <strong>Episodes:</strong> Use <code>/api/zinkmovies/jio?url=jioStarUrl</code> to extract episode download links
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Badge variant="outline" className="text-xs shrink-0">4</Badge>
                     <div>
                       <strong>Mirrors:</strong> Use <code>/api/zinkmovies/mirror?url=videoSaverUrl</code> to extract HubCloud links
                     </div>
@@ -562,7 +619,8 @@ curl -X GET \\
                   <h4 className="font-semibold mb-2 text-sm">Response Examples</h4>
                   <ul className="text-xs space-y-1 text-muted-foreground">
                     <li>• Search returns movie titles, images, and detail page URLs</li>
-                    <li>• Details returns player URL and download link information</li>
+                    <li>• Details returns player URL, download links, and JioStar episode links</li>
+                    <li>• JioStar endpoint returns structured episode data with sizes</li>
                     <li>• Mirror endpoint returns HubCloud direct download links</li>
                   </ul>
                 </div>
@@ -571,9 +629,10 @@ curl -X GET \\
                   <h4 className="font-semibold mb-2 text-sm">Content Support</h4>
                   <ul className="text-xs space-y-1 text-muted-foreground">
                     <li>• Movies and TV shows in multiple languages</li>
+                    <li>• Episode-wise download links for TV series</li>
                     <li>• Multiple quality options (480p, 720p, 1080p)</li>
                     <li>• Direct streaming links and downloadable content</li>
-                    <li>• Multi-language audio</li>
+                    <li>• Multi-language audio support</li>
                   </ul>
                 </div>
               </div>

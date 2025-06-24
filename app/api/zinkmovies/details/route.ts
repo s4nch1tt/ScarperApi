@@ -8,6 +8,7 @@ interface DownloadLink {
   size: string;
   url: string;
   format?: string;
+  server?: string;
 }
 
 interface ZinkMoviesDetailsResponse {
@@ -17,6 +18,7 @@ interface ZinkMoviesDetailsResponse {
     description?: string;
     audio?: string;
     downloadLinks?: DownloadLink[];
+    jioStarLinks?: DownloadLink[];
     telegramUrl?: string;
     playerUrl?: string;
     litespeedSrc?: string;
@@ -139,8 +141,52 @@ export async function GET(request: NextRequest): Promise<NextResponse<ZinkMovies
           language,
           size,
           url,
-          format
+          format,
+          server: 'Direct'
         });
+      }
+    });
+
+    // Extract JioStar links from seriecontainer sections
+    const jioStarLinks: DownloadLink[] = [];
+    $('.seriecontainer .movie-button-container a').each((_, element) => {
+      const $link = $(element);
+      const url = $link.attr('href');
+      const text = $link.find('span').text().trim();
+      
+      if (url && text && url.includes('jiostar.work')) {
+        const { quality, language, size, format } = extractDownloadInfo(text);
+        jioStarLinks.push({
+          quality,
+          language,
+          size,
+          url,
+          format,
+          server: 'JioStar'
+        });
+      }
+    });
+
+    // Also check for JioStar links in the main description area
+    $description.find('a[href*="jiostar.work"]').each((_, element) => {
+      const $link = $(element);
+      const url = $link.attr('href');
+      const text = $link.text().trim() || $link.find('span').text().trim();
+      
+      if (url && text) {
+        const { quality, language, size, format } = extractDownloadInfo(text);
+        // Check if this URL already exists
+        const exists = jioStarLinks.some(link => link.url === url);
+        if (!exists) {
+          jioStarLinks.push({
+            quality,
+            language,
+            size,
+            url,
+            format,
+            server: 'JioStar'
+          });
+        }
       }
     });
     
@@ -151,7 +197,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ZinkMovies
     const playerUrl = $('.video-player-wrapper iframe').attr('src');
     const litespeedSrc = $('.video-player-wrapper iframe').attr('data-litespeed-src');
 
-    if (!description && !downloadLinks.length && !playerUrl && !litespeedSrc) {
+    if (!description && !downloadLinks.length && !jioStarLinks.length && !playerUrl && !litespeedSrc) {
       return NextResponse.json<ZinkMoviesDetailsResponse>({
         success: false,
         error: 'No content found',
@@ -163,8 +209,14 @@ export async function GET(request: NextRequest): Promise<NextResponse<ZinkMovies
     return NextResponse.json<ZinkMoviesDetailsResponse>({
       success: true,
       data: {
-    
+        title: title || undefined,
+        description: description || undefined,
+        audio: audio || undefined,
         downloadLinks: downloadLinks.length > 0 ? downloadLinks : undefined,
+        jioStarLinks: jioStarLinks.length > 0 ? jioStarLinks : undefined,
+        telegramUrl: telegramUrl || undefined,
+        playerUrl: playerUrl || undefined,
+        litespeedSrc: litespeedSrc || undefined
       },
       remainingRequests: authResult.apiKey ? (authResult.apiKey.requestsLimit - authResult.apiKey.requestsUsed) : 0
     });
