@@ -129,6 +129,8 @@ export async function GET(request: NextRequest): Promise<NextResponse<ZinkMovies
     
     // Extract direct download links
     const downloadLinks: DownloadLink[] = [];
+    
+    // Method 1: Extract from movie-button-container (existing method)
     $description.find('.movie-button-container a').each((_, element) => {
       const $link = $(element);
       const url = $link.attr('href');
@@ -143,6 +145,51 @@ export async function GET(request: NextRequest): Promise<NextResponse<ZinkMovies
           url,
           format,
           server: 'Direct'
+        });
+      }
+    });
+
+    // Method 2: Extract from download table structure
+    $('#download .links_table table tbody tr').each((_, element) => {
+      const $row = $(element);
+      
+      // Extract download URL from the first td's anchor tag
+      const downloadUrl = $row.find('td:first-child a').attr('href');
+      
+      // Extract quality from the second td
+      const quality = $row.find('td:nth-child(2) .quality').text().trim() || 
+                     $row.find('td:nth-child(2)').text().trim();
+      
+      // Extract language from the third td
+      const language = $row.find('td:nth-child(3)').text().trim();
+      
+      // Extract size from the fourth td
+      const size = $row.find('td:nth-child(4)').text().trim();
+      
+      if (downloadUrl && quality) {
+        // Determine format from quality text
+        let format: string | undefined;
+        if (quality.includes('HEVC') || quality.includes('H.265')) {
+          format = quality.includes('10bit') ? '10bit HEVC' : 'HEVC';
+        }
+        if (quality.includes('4K') || quality.includes('2160p')) {
+          format = format ? `4K ${format}` : '4K';
+        }
+        
+        // Extract just the resolution from quality
+        let cleanQuality = 'Unknown';
+        if (quality.includes('2160p') || quality.includes('4K')) cleanQuality = '4K';
+        else if (quality.includes('1080p')) cleanQuality = '1080p';
+        else if (quality.includes('720p')) cleanQuality = '720p';
+        else if (quality.includes('480p')) cleanQuality = '480p';
+        
+        downloadLinks.push({
+          quality: cleanQuality,
+          language: language || 'Unknown',
+          size: size || 'Unknown',
+          url: downloadUrl,
+          format,
+          server: 'Table Download'
         });
       }
     });
