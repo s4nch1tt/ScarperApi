@@ -127,7 +127,7 @@ async function fetchSeasonEpisodes(postId: string, seasonNumber: number): Promis
       const imageUrl = normalizeImageUrl(article.find('figure img').attr('src'));
       
       // Extract episode ID from the link path
-      const id = link ? link.split('/').filter(Boolean).pop() : '';
+      const id = link ? link.split('/').filter(Boolean).pop() || '' : '';
       
       episodes.push({
         id,
@@ -219,8 +219,12 @@ async function scrapeAnimeDetails(id: string, fetchAllSeasons = false): Promise<
     // Extract overview text
     const overview = $('#overview-text p').text().trim();
     
-    // Extract available seasons from the season dropdown
+    // Enhanced season detection with multiple fallback methods
     const availableSeasons: Season[] = [];
+    
+    console.log('Starting season detection...');
+    
+    // Method 1: Original selector
     $('.choose-season .aa-cnt li a[data-season]').each((_, el) => {
       const seasonElement = $(el);
       const seasonNumber = seasonElement.attr('data-season');
@@ -228,6 +232,7 @@ async function scrapeAnimeDetails(id: string, fetchAllSeasons = false): Promise<
       const dataPost = seasonElement.attr('data-post');
       
       if (seasonNumber) {
+        console.log(`Method 1 - Found season: ${seasonNumber}, text: ${seasonText}, dataPost: ${dataPost}`);
         availableSeasons.push({
           number: parseInt(seasonNumber, 10),
           text: seasonText,
@@ -236,8 +241,122 @@ async function scrapeAnimeDetails(id: string, fetchAllSeasons = false): Promise<
       }
     });
     
+    // Method 2: Alternative selectors for season dropdown
+    if (availableSeasons.length === 0) {
+      console.log('Method 1 failed, trying alternative selectors...');
+      
+      // Try different possible selectors
+      const seasonSelectors = [
+        '.choose-season a[data-season]',
+        '[data-season]',
+        '.season-selector [data-season]',
+        '.seasons [data-season]',
+        '.dropdown [data-season]',
+        'select[name="season"] option',
+        '.season-dropdown option'
+      ];
+      
+      for (const selector of seasonSelectors) {
+        $(selector).each((_, el) => {
+          const seasonElement = $(el);
+          let seasonNumber = seasonElement.attr('data-season') || seasonElement.attr('value');
+          const seasonText = seasonElement.text().trim();
+          const dataPost = seasonElement.attr('data-post');
+          
+          if (seasonNumber && !isNaN(parseInt(seasonNumber))) {
+            console.log(`Alternative selector "${selector}" - Found season: ${seasonNumber}, text: ${seasonText}`);
+            const seasonNum = parseInt(seasonNumber, 10);
+            
+            // Avoid duplicates
+            if (!availableSeasons.some(s => s.number === seasonNum)) {
+              availableSeasons.push({
+                number: seasonNum,
+                text: seasonText || `Season ${seasonNum}`,
+                dataPost: dataPost || ''
+              });
+            }
+          }
+        });
+        
+        if (availableSeasons.length > 0) break;
+      }
+    }
+    
+    // Method 3: Extract seasons from episode links or play buttons
+    if (availableSeasons.length === 0) {
+      console.log('Alternative selectors failed, extracting from episode patterns...');
+      
+      const seasonNumbers = new Set<number>();
+      
+      // Look for season patterns in episode links
+      $('a[href*="/episode/"]').each((_, el) => {
+        const href = $(el).attr('href') || '';
+        const text = $(el).text();
+        
+        // Extract season from URL or text patterns like "S1-E1", "Season 1", etc.
+        const seasonMatch = href.match(/s(\d+)e\d+/i) || 
+                           text.match(/S(\d+)[-\s]*E?\d+/i) ||
+                           text.match(/Season\s*(\d+)/i);
+        
+        if (seasonMatch) {
+          seasonNumbers.add(parseInt(seasonMatch[1], 10));
+        }
+      });
+      
+      // Convert to seasons array
+      seasonNumbers.forEach(seasonNum => {
+        console.log(`Episode pattern - Found season: ${seasonNum}`);
+        availableSeasons.push({
+          number: seasonNum,
+          text: `Season ${seasonNum}`,
+          dataPost: '' // Will need to be found through other means
+        });
+      });
+    }
+    
+    // Method 4: Create default season if none found but episodes exist
+    if (availableSeasons.length === 0) {
+      console.log('No seasons detected, checking for episodes...');
+      
+      const hasEpisodes = $('a[href*="/episode/"]').length > 0 || 
+                         $('.episode').length > 0 ||
+                         latestEpisodeUrl;
+      
+      if (hasEpisodes) {
+        console.log('Episodes found but no seasons, creating default season');
+        availableSeasons.push({
+          number: 1,
+          text: 'Season 1',
+          dataPost: '' // Will try to extract from page data
+        });
+      }
+    }
+    
+    // Method 5: Try to find data-post values from form inputs or other elements
+    if (availableSeasons.some(s => !s.dataPost)) {
+      console.log('Looking for data-post values...');
+      
+      // Look for post ID in various places
+      const postId = $('input[name="post"]').attr('value') ||
+                    $('form').attr('data-post') ||
+                    $('[data-post]').first().attr('data-post') ||
+                    $('.post-id').text() ||
+                    $('body').attr('data-post-id');
+      
+      if (postId) {
+        console.log(`Found post ID: ${postId}`);
+        availableSeasons.forEach(season => {
+          if (!season.dataPost) {
+            season.dataPost = postId;
+          }
+        });
+      }
+    }
+    
     // Sort seasons by number
     availableSeasons.sort((a, b) => a.number - b.number);
+    
+    console.log(`Final seasons found: ${availableSeasons.length}`, availableSeasons);
     
     // Fetch episodes for each season
     const allEpisodes: Episode[] = [];
