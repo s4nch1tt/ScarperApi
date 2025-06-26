@@ -38,7 +38,36 @@ export const metadata: Metadata = {
     "movie information API",
     "developer API",
     "REST API movies",
-    "JSON movie data"
+    "JSON movie data",
+    "free streaming service",
+    "movie search API",
+    "film database",
+    "cinema API",
+    "Hollywood movies API",
+    "Bollywood movies API",
+    "web series API",
+    "OTT platform API",
+    "movie trailer API",
+    "cast and crew API",
+    "movie ratings API",
+    "genre-based movies",
+    "latest movies API",
+    "trending series API",
+    "anime episodes API",
+    "subtitle API",
+    "movie poster API",
+    "streaming links generator",
+    "video quality API",
+    "HD movies API",
+    "4K streaming API",
+    "mobile streaming API",
+    "cross-platform API",
+    "real-time streaming",
+    "buffering-free streaming",
+    "unlimited movie access",
+    "no registration API",
+    "open source movie API",
+    "scalable streaming solution"
   ].join(", "),
   authors: [{ name: "ScreenScape Team" }],
   creator: "ScreenScape",
@@ -48,17 +77,30 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://totu.me'), // Replace with your actual domain
+  metadataBase: new URL('https://totu.me'),
   alternates: {
     canonical: '/',
+  },
+  icons: {
+    icon: '/logo.jpg',
+    shortcut: '/logo.jpg',
+    apple: '/logo.jpg',
   },
   openGraph: {
     title: "ScreenScape - Free Movies & Series API Platform",
     description: "Access free APIs for movies, TV series, and anime. Get streaming links, metadata, and episode information for your applications.",
-    url: "https://totu.me", // Replace with your actual domain
+    url: "https://totu.me",
     siteName: "ScreenScape",
     type: "website",
     locale: "en_US",
+    images: [
+      {
+        url: '/logo.jpg',
+        width: 1200,
+        height: 630,
+        alt: "ScreenScape - Free Movie API Platform",
+      },
+    ],
   },
   robots: {
     index: true,
@@ -101,4 +143,3 @@ export default function RootLayout({
     </html>
   );
 }
-                

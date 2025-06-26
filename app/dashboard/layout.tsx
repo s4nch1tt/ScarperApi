@@ -3,6 +3,7 @@
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter, usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
+import Image from "next/image"
 import {
   Home,
   Settings,
@@ -106,10 +107,19 @@ function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2 px-2 py-2">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">S</span>
+            <div className="h-8 w-8 rounded-lg overflow-hidden flex items-center justify-center">
+              <Image 
+                src="/logo.jpg" 
+                alt="ScreenScape Logo" 
+                width={32} 
+                height={32}
+                className="object-contain"
+              />
             </div>
-            <span className="font-bold group-data-[collapsible=icon]:hidden">
+            <span 
+              className="font-bold group-data-[collapsible=icon]:hidden cursor-pointer hover:text-primary transition-colors"
+              onClick={() => window.open('https://screenscape.fun', '_blank')}
+            >
               ScreenScape
             </span>
           </div>
@@ -151,11 +161,17 @@ function AppSidebar() {
             Created and managed by
           </p>
           <p className="text-xs font-medium text-primary group-data-[collapsible=icon]:hidden">
-            ScreenScape
+            Team ScreenScape
           </p>
           <div className="group-data-[collapsible=icon]:block hidden">
-            <div className="h-6 w-6 mx-auto rounded bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xs">S</span>
+            <div className="h-6 w-6 mx-auto rounded overflow-hidden flex items-center justify-center">
+              <Image 
+                src="/logo.jpg" 
+                alt="ScreenScape Logo" 
+                width={24} 
+                height={24}
+                className="object-contain"
+              />
             </div>
           </div>
         </div>
