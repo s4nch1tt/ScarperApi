@@ -319,7 +319,7 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
       try {
         setLoading(true)
         // Get the full URL for this movie
-        const fullUrl = `https://moviesdrive.design/${id}/`
+        const fullUrl = `https://moviesdrive.click/${id}/`
         
         // Fetch movie details using our API
         const res = await fetch(`/api/moviesdrive/episode?url=${encodeURIComponent(fullUrl)}`, {
@@ -564,7 +564,7 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
   const fetchStreamLinks = async (episodeUrl: string) => {
     setFetchingStreams(true)
     try {
-      const response = await fetch(`https://kmmovies-ansh.8man.me/api/hubcloud?url=${encodeURIComponent(episodeUrl)}`)
+      const response = await fetch(`https://scarper-ansh.vercel.app/api/hubcloud?url=${encodeURIComponent(episodeUrl)}`)
       const streamData: StreamResponse = await response.json()
       
       if (streamData.success && streamData.links) {

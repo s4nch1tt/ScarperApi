@@ -66,7 +66,7 @@ const movies4UApiCategories: ApiCategory[] = [
         endpoint: "/api/movies4u",
         description: "Get detailed movie/series information with download links organized by seasons and quality",
         params: [
-          { name: "stream", type: "string", required: true, description: "Full movie URL from movies4u.mov (e.g., https://movies4u.mov/loki-season-1-2-dual-audio/)" }
+          { name: "stream", type: "string", required: true, description: "Full movie URL from movies4u.mov (e.g., https://movies4u.mba/loki-season-1-2-dual-audio/)" }
         ]
       }
     ]
@@ -278,7 +278,7 @@ data.data.items.forEach(item => {
 });`;
         } else if (selectedCategory.name === "Stream Details") {
           return `// Get detailed movie/series information with seasons
-const movieUrl = "https://movies4u.mov/loki-season-1-2-dual-audio-hindi-english-dnsp-web-series-web-dl/";
+const movieUrl = "https://movies4u.mba/loki-season-1-2-dual-audio-hindi-english-dnsp-web-series-web-dl/";
 const response = await fetch(\`${baseUrl}/api/movies4u?stream=\${encodeURIComponent(movieUrl)}\`, {
   headers: {
     "x-api-key": "YOUR_API_KEY",
@@ -366,7 +366,7 @@ print(data["data"]["items"])  # Search results`;
 import requests
 from urllib.parse import quote
 
-movie_url = "https://movies4u.mov/loki-season-1-2-dual-audio-hindi-english-dnsp-web-series-web-dl/"
+movie_url = "https://movies4u.mba/loki-season-1-2-dual-audio-hindi-english-dnsp-web-series-web-dl/"
 url = f"${baseUrl}/api/movies4u?stream={quote(movie_url)}"
 headers = {
     "x-api-key": "YOUR_API_KEY",
@@ -457,8 +457,8 @@ curl -X GET \\
       {
         "id": "loki-season-1-2-dual-audio",
         "title": "Loki Season 1-2 (2021-2023) Dual Audio [Hindi-English] DSNP Web Series WEB-DL",
-        "url": "https://movies4u.mov/loki-season-1-2-dual-audio-hindi-english-dnsp-web-series-web-dl/",
-        "image": "https://movies4u.mov/wp-content/uploads/2023/10/loki-poster.jpg",
+        "url": "https://movies4u.mba/loki-season-1-2-dual-audio-hindi-english-dnsp-web-series-web-dl/",
+        "image": "https://movies4u.mba/wp-content/uploads/2023/10/loki-poster.jpg",
         "videoLabel": "Series",
         "hasVideoIcon": true,
         "altText": "Loki Season 1-2 Dual Audio Series"
@@ -466,8 +466,8 @@ curl -X GET \\
       {
         "id": "spider-man-no-way-home-2021",
         "title": "Spider-Man: No Way Home (2021) Hindi Dubbed Movie [Dual Audio] BluRay",
-        "url": "https://movies4u.mov/spider-man-no-way-home-2021-hindi-dubbed/",
-        "image": "https://movies4u.mov/wp-content/uploads/2022/01/spider-man-nwh.jpg",
+        "url": "https://movies4u.mba/spider-man-no-way-home-2021-hindi-dubbed/",
+        "image": "https://movies4u.mba/wp-content/uploads/2022/01/spider-man-nwh.jpg",
         "videoLabel": "Movie",
         "hasVideoIcon": true,
         "altText": "Spider-Man No Way Home Hindi Dubbed"
@@ -489,8 +489,8 @@ curl -X GET \\
       {
         "id": "loki-season-1-2-dual-audio",
         "title": "Loki Season 1-2 (2021-2023) Dual Audio [Hindi-English] DSNP Web Series WEB-DL",
-        "url": "https://movies4u.mov/loki-season-1-2-dual-audio-hindi-english-dnsp-web-series-web-dl/",
-        "image": "https://movies4u.mov/wp-content/uploads/2023/10/loki-poster.jpg",
+        "url": "https://movies4u.mba/loki-season-1-2-dual-audio-hindi-english-dnsp-web-series-web-dl/",
+        "image": "https://movies4u.mba/wp-content/uploads/2023/10/loki-poster.jpg",
         "videoLabel": "Series",
         "hasVideoIcon": true,
         "altText": "Loki Season 1-2 Dual Audio Series"
@@ -509,8 +509,8 @@ curl -X GET \\
   "success": true,
   "data": {
     "title": "Loki Season 1-2 (2021-2023) Dual Audio [Hindi-English] DSNP Web Series WEB-DL",
-    "url": "https://movies4u.mov/loki-season-1-2-dual-audio-hindi-english-dnsp-web-series-web-dl/",
-    "posterUrl": "https://movies4u.mov/wp-content/uploads/2023/10/loki-poster.jpg",
+    "url": "https://movies4u.mba/loki-season-1-2-dual-audio-hindi-english-dnsp-web-series-web-dl/",
+    "posterUrl": "https://movies4u.mba/wp-content/uploads/2023/10/loki-poster.jpg",
     "seasons": [
       {
         "name": "Season 2",

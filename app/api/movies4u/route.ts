@@ -79,7 +79,7 @@ interface StreamResponse {
 function normalizeImageUrl(url: string | undefined): string | undefined {
   if (!url) return undefined;
   if (url.startsWith('//')) return 'https:' + url;
-  if (url.startsWith('/')) return 'https://movies4u.mov' + url;
+  if (url.startsWith('/')) return 'https://movies4u.mba' + url;
   return url;
 }
 
@@ -100,7 +100,7 @@ function extractIdFromUrl(url: string): string {
 // Main function to scrape Movies4U data
 async function scrapeMovies4UData(page: number = 1, searchQuery?: string): Promise<Movies4UItem[]> {
   try {
-    let url = 'https://movies4u.mov/';
+    let url = 'https://movies4u.mba/';
     
     if (searchQuery) {
       url += `?s=${encodeURIComponent(searchQuery)}`;
@@ -116,7 +116,7 @@ async function scrapeMovies4UData(page: number = 1, searchQuery?: string): Promi
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Referer': 'https://movies4u.mov/',
+        'Referer': 'https://movies4u.mba/',
       },
       next: { revalidate: 0 }
     });
@@ -231,7 +231,7 @@ async function scrapeDownloadLinks(url: string): Promise<ContentData> {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Referer': 'https://movies4u.mov/',
+        'Referer': 'https://movies4u.mba/',
       },
       next: { revalidate: 0 }
     });

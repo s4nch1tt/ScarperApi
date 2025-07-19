@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const response = await fetch(`https://kmmovies-ansh.8man.me/api/hubcloud?url=${encodeURIComponent(url)}`)
+    const response = await fetch(`https://scarper-ansh.vercel.app/api/hubcloud?url=${encodeURIComponent(url)}`)
     const data = await response.json()
     
     // Process the links to extract direct download URLs from gpdl.hubcdn.fans

@@ -45,7 +45,7 @@ interface MovieDownloadData {
 // Function to fetch file details from kmmovies API
 async function fetchFileDetails(fileUrl: string): Promise<any> {
   try {
-    const apiUrl = `https://kmmovies-ansh.8man.me/api/allmovieshub/file?url=${encodeURIComponent(fileUrl)}`;
+    const apiUrl = `https://scarper-ansh.vercel.app/api/allmovieshub/file?url=${encodeURIComponent(fileUrl)}`;
     
     console.log(`Fetching file details from: ${apiUrl}`);
     
