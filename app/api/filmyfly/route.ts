@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { load } from 'cheerio';
 import { validateApiKey, createUnauthorizedResponse } from '@/lib/middleware/api-auth';
+import { getFilmyFlyUrl } from '@/lib/utils/providers';
 
 interface FilmyFlyItem {
   id: string;
@@ -30,10 +31,13 @@ interface FilmyFlyResponse {
 }
 
 // Function to normalize image URLs
-function normalizeImageUrl(url: string | undefined): string | undefined {
+async function normalizeImageUrl(url: string | undefined): Promise<string | undefined> {
   if (!url) return undefined;
   if (url.startsWith('//')) return 'https:' + url;
-  if (url.startsWith('/')) return 'https://filmyfly.dog/' + url;
+  if (url.startsWith('/')) {
+    const baseUrl = await getFilmyFlyUrl();
+    return baseUrl + url;
+  }
   return url;
 }
 
@@ -117,7 +121,7 @@ function generateIdFromUrl(url: string): string {
   try {
     const urlParts = url.split('/');
     const relevantPart = urlParts.find(part => 
-      part.length > 5 && !part.includes('filmyfly.men')
+      part.length > 5 && !part.includes('filmyfly') && !part.includes('republican')
     );
     return relevantPart ? relevantPart.replace(/[^a-zA-Z0-9-]/g, '') : '';
   } catch {
@@ -128,7 +132,8 @@ function generateIdFromUrl(url: string): string {
 // Main function to scrape FilmyFly search results
 async function scrapeFilmyFlySearch(searchQuery: string): Promise<FilmyFlyItem[]> {
   try {
-    const searchUrl = `https://filmyfly.dog//site-1.html?to-search=${encodeURIComponent(searchQuery)}`;
+    const baseUrl = await getFilmyFlyUrl();
+    const searchUrl = `${baseUrl}site-1.html?to-search=${encodeURIComponent(searchQuery)}`;
     
     console.log(`Searching FilmyFly with query: ${searchQuery}`);
     console.log(`Search URL: ${searchUrl}`);
@@ -139,7 +144,7 @@ async function scrapeFilmyFlySearch(searchQuery: string): Promise<FilmyFlyItem[]
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Referer': 'https://filmyfly.dog//',
+        'Referer': baseUrl,
       },
       next: { revalidate: 0 }
     });
@@ -153,12 +158,13 @@ async function scrapeFilmyFlySearch(searchQuery: string): Promise<FilmyFlyItem[]
     const items: FilmyFlyItem[] = [];
 
     // Process search results from .A2 div elements
-    $('.A2').each((_, element) => {
+    const elements = $('.A2').toArray();
+    for (const element of elements) {
       const $element = $(element);
       
       // Extract image from img inside first a tag
       let imageUrl = $element.find('a:first img').attr('src');
-      imageUrl = normalizeImageUrl(imageUrl);
+      imageUrl = await normalizeImageUrl(imageUrl);
       
       // Extract post URL from first a tag
       const postUrl = $element.find('a:first').attr('href');
@@ -170,7 +176,7 @@ async function scrapeFilmyFlySearch(searchQuery: string): Promise<FilmyFlyItem[]
       
       if (title && postUrl && imageUrl) {
         // Make postUrl absolute if it's relative
-        const absolutePostUrl = postUrl.startsWith('/') ? `https://filmyfly.dog/${postUrl}` : postUrl;
+        const absolutePostUrl = postUrl.startsWith('/') ? `${baseUrl}${postUrl}` : postUrl;
         
         // Extract all the metadata from the title
         const qualities = extractQualityInfo(title);
@@ -206,7 +212,7 @@ async function scrapeFilmyFlySearch(searchQuery: string): Promise<FilmyFlyItem[]
           hasImage: !!imageUrl
         });
       }
-    });
+    }
 
     console.log(`Successfully parsed ${items.length} search results for query: ${searchQuery}`);
     return items;
@@ -219,7 +225,8 @@ async function scrapeFilmyFlySearch(searchQuery: string): Promise<FilmyFlyItem[]
 // Function to scrape latest content from homepage
 async function scrapeFilmyFlyHomepage(): Promise<FilmyFlyItem[]> {
   try {
-    const url = 'https://filmyfly.dog//';
+    const baseUrl = await getFilmyFlyUrl();
+    const url = baseUrl;
     
     console.log(`Fetching FilmyFly homepage content from: ${url}`);
 
@@ -229,7 +236,7 @@ async function scrapeFilmyFlyHomepage(): Promise<FilmyFlyItem[]> {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Referer': 'https://filmyfly.dog//',
+        'Referer': baseUrl,
       },
       next: { revalidate: 0 }
     });
@@ -243,12 +250,13 @@ async function scrapeFilmyFlyHomepage(): Promise<FilmyFlyItem[]> {
     const items: FilmyFlyItem[] = [];
 
     // Process content from .A2 div elements on homepage
-    $('.A2').each((_, element) => {
+    const elements = $('.A2').toArray();
+    for (const element of elements) {
       const $element = $(element);
       
       // Extract image from img inside first a tag
       let imageUrl = $element.find('a:first img').attr('src');
-      imageUrl = normalizeImageUrl(imageUrl);
+      imageUrl = await normalizeImageUrl(imageUrl);
       
       // Extract post URL from first a tag
       const postUrl = $element.find('a:first').attr('href');
@@ -260,7 +268,7 @@ async function scrapeFilmyFlyHomepage(): Promise<FilmyFlyItem[]> {
       
       if (title && postUrl && imageUrl) {
         // Make postUrl absolute if it's relative
-        const absolutePostUrl = postUrl.startsWith('/') ? `https://filmyfly.dog/${postUrl}` : postUrl;
+        const absolutePostUrl = postUrl.startsWith('/') ? `${baseUrl}${postUrl}` : postUrl;
         
         // Extract all the metadata from the title
         const qualities = extractQualityInfo(title);
@@ -290,7 +298,7 @@ async function scrapeFilmyFlyHomepage(): Promise<FilmyFlyItem[]> {
           hasSubtitles: hasSubtitlesContent
         });
       }
-    });
+    }
 
     console.log(`Successfully parsed ${items.length} homepage items`);
     return items;

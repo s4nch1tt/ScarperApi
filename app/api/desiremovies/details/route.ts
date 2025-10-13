@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { load } from 'cheerio';
 import { validateApiKey, createUnauthorizedResponse } from '@/lib/middleware/api-auth';
+import { validateDesireMoviesUrl } from '@/lib/utils/providers';
 
 // Function to normalize image URLs
 function normalizeImageUrl(url: string | undefined): string | undefined {
@@ -14,7 +15,7 @@ function extractEpisodes($: any) {
   const episodes: any[] = [];
   
   // Find all episode headers (h3 with EP pattern)
-  $('.entry-content h3').each((_, element) => {
+  $('.entry-content h3').each((_: any, element: any) => {
     const $element = $(element);
     const episodeText = $element.text().trim();
     
@@ -34,7 +35,7 @@ function extractEpisodes($: any) {
           
           // Check for x264 links
           if (h4Text.includes('x264')) {
-            nextElement.find('a').each((_, linkElement) => {
+            nextElement.find('a').each((_: any, linkElement: any) => {
               const $link = $(linkElement);
               const url = $link.attr('href');
               const quality = $link.text().trim();
@@ -52,7 +53,7 @@ function extractEpisodes($: any) {
           
           // Check for x265 links
           if (h4Text.includes('x265')) {
-            nextElement.find('a').each((_, linkElement) => {
+            nextElement.find('a').each((_: any, linkElement: any) => {
               const $link = $(linkElement);
               const url = $link.attr('href');
               const quality = $link.text().trim();
@@ -146,7 +147,7 @@ function extractDownloadLinks($: any) {
   const downloadLinks: any[] = [];
   
   // Find all download sections
-  $('.entry-content').find('p').each((_, element) => {
+  $('.entry-content').find('p').each((_ : any, element : any) => {
     const $element = $(element);
     const text = $element.text().trim();
     
@@ -201,6 +202,7 @@ async function scrapeMovieDetails(movieUrl: string) {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
+        'Referer': new URL(movieUrl).origin + '/',
       },
       next: { revalidate: 0 }
     });
@@ -257,10 +259,11 @@ export async function GET(request: Request) {
     }
 
     // Validate URL format
-    if (!movieUrl.includes('desiremovies.cologne')) {
+    const isValidUrl = await validateDesireMoviesUrl(movieUrl);
+    if (!isValidUrl) {
       return NextResponse.json({
         success: false,
-        error: 'Invalid URL. Must be a DesireMovies URL'
+        error: 'Invalid URL. Must be a valid DesireMovies URL'
       }, {
         status: 400
       });

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { load } from 'cheerio';
+import { getMoviesDriveUrl } from '@/lib/utils/providers';
 
 // Function to normalize image URLs - handling protocol-relative URLs
 function normalizeImageUrl(url: string | undefined): string | undefined {
@@ -11,9 +12,10 @@ function normalizeImageUrl(url: string | undefined): string | undefined {
 // Main function to fetch and parse HTML content
 async function scrapeMoviesDriveData(page: number = 1) {
   try {
+    const baseUrl = await getMoviesDriveUrl();
     const url = page === 1 
-      ? 'https://moviesdrive.rodeo//' 
-      : `https://moviesdrive.rodeo//page/${page}/`;
+      ? baseUrl 
+      : `${baseUrl}page/${page}/`;
     
     console.log(`Fetching content from: ${url}`);
 
@@ -99,7 +101,8 @@ async function scrapeMoviesDriveData(page: number = 1) {
 // Function to search content - needs similar updates
 async function searchMoviesDriveData(searchQuery: string) {
   try {
-    const searchUrl = `https://moviesdrive.rodeo//?s=${encodeURIComponent(searchQuery)}`;
+    const baseUrl = await getMoviesDriveUrl();
+    const searchUrl = `${baseUrl}?s=${encodeURIComponent(searchQuery)}`;
     
     const response = await fetch(searchUrl, {
       cache: 'no-cache',

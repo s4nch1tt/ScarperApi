@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { load } from 'cheerio';
 import { validateApiKey, createUnauthorizedResponse } from '@/lib/middleware/api-auth';
+import { getTopMoviesUrl } from '@/lib/utils/providers';
 
 interface TopMoviesItem {
   id: string;
@@ -30,10 +31,13 @@ interface TopMoviesResponse {
 }
 
 // Function to normalize image URLs
-function normalizeImageUrl(url: string | undefined): string | undefined {
+async function await normalizeImageUrl(url: string | undefined): Promise<string | undefined> {
   if (!url) return undefined;
   if (url.startsWith('//')) return 'https:' + url;
-  if (url.startsWith('/')) return 'https://topmovies.tube/' + url;
+  if (url.startsWith('/')) {
+    const baseUrl = await getTopMoviesUrl();
+    return baseUrl + url;
+  }
   return url;
 }
 
@@ -116,7 +120,8 @@ function extractContentInfo(title: string): { type: 'movie' | 'series'; season?:
 // Function to scrape TopMovies search results
 async function scrapeTopMoviesSearch(searchQuery: string): Promise<TopMoviesItem[]> {
   try {
-    const searchUrl = `https://topmovies.tube//search/${encodeURIComponent(searchQuery)}`;
+    const baseUrl = await getTopMoviesUrl();
+    const searchUrl = `${baseUrl}search/${encodeURIComponent(searchQuery)}`;
     
     console.log(`Fetching TopMovies search results from: ${searchUrl}`);
 
@@ -126,7 +131,7 @@ async function scrapeTopMoviesSearch(searchQuery: string): Promise<TopMoviesItem
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
-        'Referer': 'https://topmovies.tube//',
+        'Referer': '${baseUrl}',
       },
     });
 
@@ -147,7 +152,7 @@ async function scrapeTopMoviesSearch(searchQuery: string): Promise<TopMoviesItem
       
       // Extract image URL
       let imageUrl = $element.find('.featured-thumbnail img').attr('src');
-      imageUrl = normalizeImageUrl(imageUrl);
+      imageUrl = await normalizeImageUrl(imageUrl);
       
       // Extract title and URL
       const titleElement = $element.find('h2.title a');
@@ -190,9 +195,10 @@ async function scrapeTopMoviesSearch(searchQuery: string): Promise<TopMoviesItem
 // Function to scrape TopMovies homepage/listing
 async function scrapeTopMoviesListing(page: number = 1): Promise<TopMoviesItem[]> {
   try {
+    const baseUrl = await getTopMoviesUrl();
     const url = page === 1 
-      ? 'https://topmovies.tube//' 
-      : `https://topmovies.tube//page/${page}/`;
+      ? baseUrl 
+      : `${baseUrl}page/${page}/`;
     
     console.log(`Fetching TopMovies listing from: ${url}`);
 
@@ -202,7 +208,7 @@ async function scrapeTopMoviesListing(page: number = 1): Promise<TopMoviesItem[]
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
-        'Referer': 'https://topmovies.tube//',
+        'Referer': '${baseUrl}',
       },
     });
 
@@ -228,7 +234,7 @@ async function scrapeTopMoviesListing(page: number = 1): Promise<TopMoviesItem[]
       
       // Extract image URL
       let imageUrl = $element.find('img').first().attr('src');
-      imageUrl = normalizeImageUrl(imageUrl);
+      imageUrl = await normalizeImageUrl(imageUrl);
       
       // Extract title and URL
       const titleElement = $element.find('h2 a, h3 a, .title a').first();

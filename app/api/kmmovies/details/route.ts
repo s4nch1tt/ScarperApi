@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { load } from 'cheerio';
 import { validateApiKey, createUnauthorizedResponse } from '@/lib/middleware/api-auth';
+import { validateKMMoviesUrl } from '@/lib/utils/providers';
 
 // Function to normalize URLs
 function normalizeUrl(url: string | undefined): string | undefined {
@@ -347,7 +348,14 @@ export async function GET(request: Request) {
       }, { status: 400 });
     }
 
-    // Make sure the URL is from kmmovies.mobi
+    // Validate that it's a KMMovies URL
+    const isValidUrl = await validateKMMoviesUrl(url);
+    if (!isValidUrl) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid URL. Must be a valid KMMovies URL'
+      }, { status: 400 });
+    }
    
     try {
       const movieDetails = await getKMmoviesDetails(url);

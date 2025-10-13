@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { load } from 'cheerio';
+import { validateHDHub4uUrl } from '@/lib/utils/providers';
 
 interface EpisodeLink {
   episode: string;
@@ -74,7 +75,7 @@ async function scrapeHDHub4uDetails(url: string): Promise<{ title: string; type:
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
-        'Referer': 'https://hdhub4u.cologne/',
+        'Referer': new URL(url).origin + '/',
       },
     });
 
@@ -558,12 +559,13 @@ export async function GET(request: NextRequest): Promise<NextResponse<HDHub4uDet
     }
 
     // Validate that it's a HDHub4u URL
-    if (!detailUrl.includes('hdhub4u')) {
+    const isValidUrl = await validateHDHub4uUrl(detailUrl);
+    if (!isValidUrl) {
       return NextResponse.json<HDHub4uDetailsResponse>(
         { 
           success: false, 
           error: 'Invalid URL',
-          message: 'URL must be from hdhub4u.gratis'
+          message: 'URL must be from a valid HDHub4u domain'
         },
         { status: 400 }
       );

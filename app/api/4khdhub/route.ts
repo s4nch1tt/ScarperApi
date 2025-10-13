@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { load } from 'cheerio';
 import { validateApiKey, createUnauthorizedResponse } from '@/lib/middleware/api-auth';
+import { get4kHDHubUrl } from '@/lib/utils/providers';
 
 interface FourKHDHubItem {
   id: string;
@@ -28,10 +29,13 @@ interface FourKHDHubResponse {
 }
 
 // Function to normalize image URLs
-function normalizeImageUrl(url: string | undefined): string | undefined {
+async function normalizeImageUrl(url: string | undefined): Promise<string | undefined> {
   if (!url) return undefined;
   if (url.startsWith('//')) return 'https:' + url;
-  if (url.startsWith('/')) return 'https://4khdhub.fans' + url;
+  if (url.startsWith('/')) {
+    const baseUrl = await get4kHDHubUrl();
+    return baseUrl + url;
+  }
   return url;
 }
 
@@ -40,7 +44,7 @@ function generateIdFromUrl(url: string): string {
   try {
     const urlParts = url.split('/');
     const relevantPart = urlParts.find(part => 
-      part.length > 5 && !part.includes('4khdhub.fans')
+      part.length > 5 && !part.includes('4khdhub') && !part.includes('fans')
     );
     return relevantPart ? relevantPart.replace(/[^a-zA-Z0-9-]/g, '') : '';
   } catch {
@@ -59,7 +63,8 @@ function determineContentType(formats: string[]): 'Movie' | 'Series' {
 // Main function to scrape 4KHDHub search results
 async function scrape4KHDHubSearch(searchQuery: string): Promise<FourKHDHubItem[]> {
   try {
-    const searchUrl = `https://4khdhub.fans/?s=${encodeURIComponent(searchQuery)}`;
+    const baseUrl = await get4kHDHubUrl();
+    const searchUrl = `${baseUrl}/?s=${encodeURIComponent(searchQuery)}`;
     
     console.log(`Searching 4KHDHub with query: ${searchQuery}`);
     console.log(`Search URL: ${searchUrl}`);
@@ -70,7 +75,7 @@ async function scrape4KHDHubSearch(searchQuery: string): Promise<FourKHDHubItem[
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Referer': 'https://4khdhub.fans/',
+        'Referer': baseUrl + '/',
       },
       next: { revalidate: 0 }
     });
@@ -80,7 +85,7 @@ async function scrape4KHDHubSearch(searchQuery: string): Promise<FourKHDHubItem[
     }
 
     const html = await response.text();
-    return parseMovieCards(html);
+    return await parseMovieCards(html);
   } catch (error) {
     console.error('Error scraping 4KHDHub search results:', error);
     throw error;
@@ -90,9 +95,10 @@ async function scrape4KHDHubSearch(searchQuery: string): Promise<FourKHDHubItem[
 // Function to scrape latest content from homepage
 async function scrape4KHDHubHomepage(page: number = 1): Promise<FourKHDHubItem[]> {
   try {
+    const baseUrl = await get4kHDHubUrl();
     const url = page === 1 
-      ? 'https://4khdhub.fans/' 
-      : `https://4khdhub.fans/page/${page}/`;
+      ? baseUrl + '/' 
+      : `${baseUrl}/page/${page}/`;
     
     console.log(`Fetching 4KHDHub homepage content from: ${url}`);
 
@@ -102,7 +108,7 @@ async function scrape4KHDHubHomepage(page: number = 1): Promise<FourKHDHubItem[]
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Referer': 'https://4khdhub.fans/',
+        'Referer': baseUrl + '/',
       },
       next: { revalidate: 0 }
     });
@@ -112,7 +118,7 @@ async function scrape4KHDHubHomepage(page: number = 1): Promise<FourKHDHubItem[]
     }
 
     const html = await response.text();
-    return parseMovieCards(html);
+    return await parseMovieCards(html);
   } catch (error) {
     console.error('Error scraping 4KHDHub homepage:', error);
     throw error;
@@ -120,12 +126,13 @@ async function scrape4KHDHubHomepage(page: number = 1): Promise<FourKHDHubItem[]
 }
 
 // Helper function to parse movie cards from HTML
-function parseMovieCards(html: string): FourKHDHubItem[] {
+async function parseMovieCards(html: string): Promise<FourKHDHubItem[]> {
   const $ = load(html);
   const items: FourKHDHubItem[] = [];
+  const baseUrl = await get4kHDHubUrl();
 
   // Process movie cards from .card-grid .movie-card elements
-  $('.card-grid .movie-card').each((_, element) => {
+  for (const element of $('.card-grid .movie-card').toArray()) {
     const $element = $(element);
     
     // Extract post URL from the anchor tag
@@ -133,7 +140,7 @@ function parseMovieCards(html: string): FourKHDHubItem[] {
     
     // Extract image from .movie-card-image img
     let imageUrl = $element.find('.movie-card-image img').attr('src');
-    imageUrl = normalizeImageUrl(imageUrl);
+    imageUrl = await normalizeImageUrl(imageUrl);
     
     // Extract alt text from img
     const altText = $element.find('.movie-card-image img').attr('alt') || '';
@@ -174,7 +181,7 @@ function parseMovieCards(html: string): FourKHDHubItem[] {
     
     if (title && postUrl && imageUrl) {
       // Make postUrl absolute if it's relative
-      const absolutePostUrl = postUrl.startsWith('/') ? `https://4khdhub.fans${postUrl}` : postUrl;
+      const absolutePostUrl = postUrl.startsWith('/') ? `${baseUrl}${postUrl}` : postUrl;
       
       // Generate ID from URL
       const id = generateIdFromUrl(absolutePostUrl) || `4khdhub-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -197,7 +204,7 @@ function parseMovieCards(html: string): FourKHDHubItem[] {
         hasImage: !!imageUrl
       });
     }
-  });
+  }
 
   console.log(`Successfully parsed ${items.length} movie cards`);
   return items;

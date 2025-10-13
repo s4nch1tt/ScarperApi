@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { load } from 'cheerio';
 import { validateApiKey, createUnauthorizedResponse } from '@/lib/middleware/api-auth';
+import { getHDHub4uUrl } from '@/lib/utils/providers';
 
 interface HDHub4uItem {
   id: string;
@@ -90,17 +91,17 @@ function extractVideoFormats(title: string): string[] {
 
 // Function to check if content is a series
 function isSeries(title: string): boolean {
-  return title.includes('Season') || 
-         title.includes('S01') || title.includes('S02') || title.includes('S03') ||
-         title.includes('ALL Episodes') ||
-         title.includes('Series');
+  return title.includes('Season') ||
+    title.includes('S01') || title.includes('S02') || title.includes('S03') ||
+    title.includes('ALL Episodes') ||
+    title.includes('Series');
 }
 
 // Function to check if content has dual audio
 function isDualAudio(title: string): boolean {
-  return title.includes('Dual Audio') || 
-         (title.includes('Hindi') && title.includes('English')) ||
-         title.includes('&');
+  return title.includes('Dual Audio') ||
+    (title.includes('Hindi') && title.includes('English')) ||
+    title.includes('&');
 }
 
 // Function to extract year from title
@@ -126,7 +127,7 @@ function extractSource(title: string): string | undefined {
 function generateIdFromUrl(url: string): string {
   try {
     const urlParts = url.split('/');
-    const relevantPart = urlParts.find(part => 
+    const relevantPart = urlParts.find(part =>
       part.length > 5 && !part.includes('hdhub4u')
     );
     return relevantPart ? relevantPart.replace(/[^a-zA-Z0-9-]/g, '') : '';
@@ -138,8 +139,9 @@ function generateIdFromUrl(url: string): string {
 // Main function to scrape HDHub4u search results
 async function scrapeHDHub4uSearch(searchQuery: string): Promise<HDHub4uItem[]> {
   try {
-    const searchUrl = `https://hdhub4u.cologne/?s=${encodeURIComponent(searchQuery)}`;
-    
+    const baseUrl = await getHDHub4uUrl();
+    const searchUrl = `${baseUrl}/?s=${encodeURIComponent(searchQuery)}`;
+
     console.log(`Searching HDHub4u with query: ${searchQuery}`);
     console.log(`Search URL: ${searchUrl}`);
 
@@ -149,7 +151,7 @@ async function scrapeHDHub4uSearch(searchQuery: string): Promise<HDHub4uItem[]> 
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Referer': 'https://hdhub4u.cologne/',
+        'Referer': baseUrl + '/',
       },
       next: { revalidate: 0 }
     });
@@ -165,22 +167,22 @@ async function scrapeHDHub4uSearch(searchQuery: string): Promise<HDHub4uItem[]> 
     // Process search results from .recent-movies ul li.thumb elements
     $('.recent-movies li.thumb').each((_, element) => {
       const $element = $(element);
-      
+
       // Extract image from figure > img
       let imageUrl = $element.find('figure img').attr('src');
       imageUrl = normalizeImageUrl(imageUrl);
-      
+
       // Extract alt text and title from img
       const altText = $element.find('figure img').attr('alt') || '';
       const titleAttr = $element.find('figure img').attr('title') || '';
-      
+
       // Extract title from figcaption > a > p
       const title = $element.find('figcaption a p').text().trim() || titleAttr || altText;
-      
+
       // Extract post URL from figcaption > a or figure > a
-      const postUrl = $element.find('figcaption a').attr('href') || 
-                     $element.find('figure a').attr('href');
-      
+      const postUrl = $element.find('figcaption a').attr('href') ||
+        $element.find('figure a').attr('href');
+
       if (title && postUrl && imageUrl) {
         // Extract all the metadata from the title
         const qualities = extractQualityInfo(title);
@@ -191,10 +193,10 @@ async function scrapeHDHub4uSearch(searchQuery: string): Promise<HDHub4uItem[]> 
         const isDualAudioContent = isDualAudio(title);
         const year = extractYear(title);
         const source = extractSource(title);
-        
+
         // Generate ID from URL
-        const id = generateIdFromUrl(postUrl) || `hdhub4u-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
+        const id = generateIdFromUrl(postUrl) || `hdhub4u-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+
         items.push({
           id,
           title,
@@ -211,7 +213,7 @@ async function scrapeHDHub4uSearch(searchQuery: string): Promise<HDHub4uItem[]> 
           source
         });
       } else {
-        console.log('Skipping incomplete item:', { 
+        console.log('Skipping incomplete item:', {
           hasTitle: !!title,
           hasUrl: !!postUrl,
           hasImage: !!imageUrl
@@ -230,10 +232,11 @@ async function scrapeHDHub4uSearch(searchQuery: string): Promise<HDHub4uItem[]> 
 // Function to scrape latest content from homepage
 async function scrapeHDHub4uHomepage(page: number = 1): Promise<HDHub4uItem[]> {
   try {
-    const url = page === 1 
-      ? 'https://hdhub4u.cologne/' 
-      : `https://hdhub4u.cologne/page/${page}/`;
-    
+    const baseUrl = await getHDHub4uUrl();
+    const url = page === 1
+      ? baseUrl + '/'
+      : `${baseUrl}/page/${page}/`;
+
     console.log(`Fetching HDHub4u homepage content from: ${url}`);
 
     const response = await fetch(url, {
@@ -242,7 +245,7 @@ async function scrapeHDHub4uHomepage(page: number = 1): Promise<HDHub4uItem[]> {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Referer': 'https://hdhub4u.cologne/',
+        'Referer': baseUrl + '/',
       },
       next: { revalidate: 0 }
     });
@@ -258,22 +261,22 @@ async function scrapeHDHub4uHomepage(page: number = 1): Promise<HDHub4uItem[]> {
     // Process content from .recent-movies ul li.thumb elements
     $('.recent-movies li.thumb').each((_, element) => {
       const $element = $(element);
-      
+
       // Extract image from figure > img
       let imageUrl = $element.find('figure img').attr('src');
       imageUrl = normalizeImageUrl(imageUrl);
-      
+
       // Extract alt text and title from img
       const altText = $element.find('figure img').attr('alt') || '';
       const titleAttr = $element.find('figure img').attr('title') || '';
-      
+
       // Extract title from figcaption > a > p
       const title = $element.find('figcaption a p').text().trim() || titleAttr || altText;
-      
+
       // Extract post URL from figcaption > a or figure > a
-      const postUrl = $element.find('figcaption a').attr('href') || 
-                     $element.find('figure a').attr('href');
-      
+      const postUrl = $element.find('figcaption a').attr('href') ||
+        $element.find('figure a').attr('href');
+
       if (title && postUrl && imageUrl) {
         // Extract all the metadata from the title
         const qualities = extractQualityInfo(title);
@@ -284,10 +287,10 @@ async function scrapeHDHub4uHomepage(page: number = 1): Promise<HDHub4uItem[]> {
         const isDualAudioContent = isDualAudio(title);
         const year = extractYear(title);
         const source = extractSource(title);
-        
+
         // Generate ID from URL
-        const id = generateIdFromUrl(postUrl) || `hdhub4u-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
+        const id = generateIdFromUrl(postUrl) || `hdhub4u-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+
         items.push({
           id,
           title,
@@ -328,9 +331,9 @@ export async function GET(request: NextRequest): Promise<NextResponse<HDHub4uRes
 
     if (page < 1) {
       return NextResponse.json<HDHub4uResponse>(
-        { 
-          success: false, 
-          error: 'Page number must be 1 or greater' 
+        {
+          success: false,
+          error: 'Page number must be 1 or greater'
         },
         { status: 400 }
       );
@@ -352,8 +355,8 @@ export async function GET(request: NextRequest): Promise<NextResponse<HDHub4uRes
       return NextResponse.json<HDHub4uResponse>({
         success: false,
         error: 'No content found',
-        message: searchQuery 
-          ? `No results found for search query: "${searchQuery}"` 
+        message: searchQuery
+          ? `No results found for search query: "${searchQuery}"`
           : `No content found on page ${page}`,
         remainingRequests: authResult.apiKey ? (authResult.apiKey.requestsLimit - authResult.apiKey.requestsUsed) : 0
       });
@@ -371,10 +374,10 @@ export async function GET(request: NextRequest): Promise<NextResponse<HDHub4uRes
 
   } catch (error: unknown) {
     console.error('HDHub4u API error:', error);
-    
+
     return NextResponse.json<HDHub4uResponse>(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Failed to fetch content from HDHub4u',
         message: error instanceof Error ? error.message : 'Unknown error occurred'
       },

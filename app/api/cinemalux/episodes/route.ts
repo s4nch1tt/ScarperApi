@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { load } from 'cheerio';
 import { validateApiKey, createUnauthorizedResponse } from '@/lib/middleware/api-auth';
+import { validateCinemaluxUrl } from '@/lib/utils/providers';
 
 interface EpisodeLink {
   title: string;
@@ -136,12 +137,13 @@ export async function GET(request: NextRequest): Promise<NextResponse<CinemaluxE
     }
 
     // Validate that it's a Cinemalux URL
-    if (!pageUrl.includes('cinemalux.store')) {
+    const isValidUrl = await validateCinemaluxUrl(pageUrl);
+    if (!isValidUrl) {
       return NextResponse.json<CinemaluxEpisodesResponse>(
         { 
           success: false, 
           error: 'Invalid URL',
-          message: 'URL must be from cinemalux.store'
+          message: 'URL must be from a valid Cinemalux domain'
         },
         { status: 400 }
       );

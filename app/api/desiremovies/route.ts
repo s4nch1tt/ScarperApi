@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { load } from 'cheerio';
 import { validateApiKey, createUnauthorizedResponse } from '@/lib/middleware/api-auth';
+import { getDesireMoviesUrl } from '@/lib/utils/providers';
 
 // Function to normalize image URLs - handling protocol-relative URLs
 function normalizeImageUrl(url: string | undefined): string | undefined {
@@ -57,9 +58,10 @@ function extractYear(title: string): string {
 // Main function to fetch and parse HTML content from DesireMovies
 async function scrapeDesireMoviesData(page: number = 1) {
   try {
+    const baseUrl = await getDesireMoviesUrl();
     const url = page === 1 
-      ? 'https://desiremovies.review//' 
-      : `https://desiremovies.review//page/${page}/`;
+      ? baseUrl 
+      : `${baseUrl}page/${page}/`;
     
     console.log(`Fetching DesireMovies content from: ${url}`);
 
@@ -69,6 +71,7 @@ async function scrapeDesireMoviesData(page: number = 1) {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
+        'Referer': baseUrl,
       },
       next: { revalidate: 0 }
     });
@@ -187,7 +190,8 @@ async function scrapeDesireMoviesData(page: number = 1) {
 // Function to search content on DesireMovies
 async function searchDesireMoviesData(searchQuery: string) {
   try {
-    const searchUrl = `https://desiremovies.review//?s=${encodeURIComponent(searchQuery)}`;
+    const baseUrl = await getDesireMoviesUrl();
+    const searchUrl = `${baseUrl}?s=${encodeURIComponent(searchQuery)}`;
     
     console.log(`Searching DesireMovies with query: ${searchQuery}`);
     
@@ -201,8 +205,8 @@ async function searchDesireMoviesData(searchQuery: string) {
         'Cache-Control': 'max-age=0',
         'Cookie': 'xla=s4t; _ga=GA1.1.1080600201.1749632377; _ga_JY310N86S8=GS2.1.1749635924.2.1.1749635925.59.0.0',
         'Priority': 'u=0, i',
-        'Referer': 'https://desiremovies.review//',
-        'Origin': 'https://desiremovies.review/',
+        'Referer': baseUrl,
+        'Origin': baseUrl.replace(/\/$/, ''),
         'Sec-Fetch-Dest': 'document',
         'Sec-Fetch-Mode': 'navigate',
         'Sec-Fetch-Site': 'same-origin',

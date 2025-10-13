@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { load } from 'cheerio';
 import { validateApiKey, createUnauthorizedResponse } from '@/lib/middleware/api-auth';
+import { getZinkMoviesUrl } from '@/lib/utils/providers';
 
 interface ZinkMoviesItem {
   id: string;
@@ -97,7 +98,8 @@ function generateIdFromUrl(url: string): string {
 // Main function to scrape ZinkMovies search results
 async function scrapeZinkMoviesSearch(searchQuery: string): Promise<ZinkMoviesItem[]> {
   try {
-    const searchUrl = `https://zinkmovies.pics/?s=${encodeURIComponent(searchQuery)}`;
+    const baseUrl = await getZinkMoviesUrl();
+    const searchUrl = `${baseUrl}?s=${encodeURIComponent(searchQuery)}`;
     
     console.log(`Searching ZinkMovies with query: ${searchQuery}`);
     console.log(`Search URL: ${searchUrl}`);
@@ -108,7 +110,7 @@ async function scrapeZinkMoviesSearch(searchQuery: string): Promise<ZinkMoviesIt
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Referer': 'https://zinkmovies.pics/',
+        'Referer': baseUrl,
       },
       next: { revalidate: 0 }
     });
@@ -193,9 +195,10 @@ async function scrapeZinkMoviesSearch(searchQuery: string): Promise<ZinkMoviesIt
 // Function to scrape latest content from homepage
 async function scrapeZinkMoviesHomepage(page: number = 1): Promise<ZinkMoviesItem[]> {
   try {
+    const baseUrl = await getZinkMoviesUrl();
     const url = page === 1 
-      ? 'https://zinkmovies.pics/' 
-      : `https://zinkmovies.pics/page/${page}/`;
+      ? baseUrl 
+      : `${baseUrl}page/${page}/`;
     
     console.log(`Fetching ZinkMovies homepage content from: ${url}`);
 
@@ -205,7 +208,7 @@ async function scrapeZinkMoviesHomepage(page: number = 1): Promise<ZinkMoviesIte
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Referer': 'https://zinkmovies.pics/',
+        'Referer': baseUrl,
       },
       next: { revalidate: 0 }
     });

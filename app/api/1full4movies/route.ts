@@ -100,28 +100,28 @@ function extractVideoFormats(title: string): string[] {
 
 // Function to check if content is a series
 function isSeries(title: string): boolean {
-  return title.includes('Season') || 
-         title.includes('S01') || title.includes('S02') || title.includes('S03') ||
-         title.includes('EP ') || title.includes('Episode') ||
-         title.includes('Web Series') ||
-         title.includes('[ADDED EP') ||
-         title.includes('[EP ');
+  return title.includes('Season') ||
+    title.includes('S01') || title.includes('S02') || title.includes('S03') ||
+    title.includes('EP ') || title.includes('Episode') ||
+    title.includes('Web Series') ||
+    title.includes('[ADDED EP') ||
+    title.includes('[EP ');
 }
 
 // Function to check if content has dual audio
 function isDualAudio(title: string): boolean {
-  return title.includes('Dual Audio') || 
-         title.includes('+ Hindi') ||
-         title.includes('+ English') ||
-         (title.includes('Hindi') && title.includes('English'));
+  return title.includes('Dual Audio') ||
+    title.includes('+ Hindi') ||
+    title.includes('+ English') ||
+    (title.includes('Hindi') && title.includes('English'));
 }
 
 // Function to check if content has multi audio
 function isMultiAudio(title: string): boolean {
   return title.includes('Multi Audio') ||
-         title.includes('+ Hindi+ Tamil + Kannada + Malayalam') ||
-         title.includes('+ Telugu + Hindi') ||
-         (title.match(/\+/g) || []).length >= 2; // Multiple + signs indicate multi-audio
+    title.includes('+ Hindi+ Tamil + Kannada + Malayalam') ||
+    title.includes('+ Telugu + Hindi') ||
+    (title.match(/\+/g) || []).length >= 2; // Multiple + signs indicate multi-audio
 }
 
 // Function to extract year from title
@@ -133,7 +133,7 @@ function extractYear(title: string): string | undefined {
 // Function to extract categories from article classes
 function extractCategories(classStr: string): string[] {
   const categories = [];
-  
+
   if (classStr.includes('web-series')) categories.push('Web Series');
   if (classStr.includes('dual-audio')) categories.push('Dual Audio');
   if (classStr.includes('multi-audio')) categories.push('Multi Audio');
@@ -151,7 +151,7 @@ function extractCategories(classStr: string): string[] {
   if (classStr.includes('hevc-720p')) categories.push('HEVC 720p');
   if (classStr.includes('unofficial-dubbed')) categories.push('Unofficial Dubbed');
   if (classStr.includes('webtv')) categories.push('Web TV');
-  
+
   return categories;
 }
 
@@ -159,7 +159,7 @@ function extractCategories(classStr: string): string[] {
 function generateIdFromUrl(url: string): string {
   try {
     const urlParts = url.split('/');
-    const relevantPart = urlParts.find(part => 
+    const relevantPart = urlParts.find(part =>
       part.length > 5 && !part.includes('1full4movies.monster')
     );
     return relevantPart ? relevantPart.replace(/[^a-zA-Z0-9-]/g, '') : '';
@@ -172,7 +172,7 @@ function generateIdFromUrl(url: string): string {
 async function scrape1Full4MoviesSearch(searchQuery: string): Promise<Full4MoviesItem[]> {
   try {
     const searchUrl = `https://1full4movies.monster/?s=${encodeURIComponent(searchQuery)}`;
-    
+
     console.log(`Searching 1Full4Movies with query: ${searchQuery}`);
     console.log(`Search URL: ${searchUrl}`);
 
@@ -198,29 +198,29 @@ async function scrape1Full4MoviesSearch(searchQuery: string): Promise<Full4Movie
     // Process search results from .posts-wrapper article elements
     $('.posts-wrapper article').each((_, element) => {
       const $element = $(element);
-      
+
       // Extract post ID from article id attribute
       const articleId = $element.attr('id') || '';
       const postId = articleId.replace('post-', '');
-      
+
       // Extract categories from article class
       const articleClasses = $element.attr('class') || '';
       const categories = extractCategories(articleClasses);
-      
+
       // Extract image from .nv-post-thumbnail-wrap img
       let imageUrl = $element.find('.nv-post-thumbnail-wrap img').attr('src');
       imageUrl = normalizeImageUrl(imageUrl);
-      
+
       // Extract alt text from img
       const altText = $element.find('.nv-post-thumbnail-wrap img').attr('alt') || '';
-      
+
       // Extract title from .blog-entry-title a
       const title = $element.find('.blog-entry-title a').text().trim();
-      
+
       // Extract post URL from .blog-entry-title a or .nv-post-thumbnail-wrap a
-      const postUrl = $element.find('.blog-entry-title a').attr('href') || 
-                     $element.find('.nv-post-thumbnail-wrap a').attr('href');
-      
+      const postUrl = $element.find('.blog-entry-title a').attr('href') ||
+        $element.find('.nv-post-thumbnail-wrap a').attr('href');
+
       if (title && postUrl && imageUrl) {
         // Extract all the metadata from the title
         const qualities = extractQualityInfo(title);
@@ -231,10 +231,10 @@ async function scrape1Full4MoviesSearch(searchQuery: string): Promise<Full4Movie
         const isDualAudioContent = isDualAudio(title);
         const isMultiAudioContent = isMultiAudio(title);
         const year = extractYear(title);
-        
+
         // Generate ID from URL or use post ID
         const id = generateIdFromUrl(postUrl) || postId || `1full4movies-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
+
         items.push({
           id,
           title,
@@ -252,7 +252,7 @@ async function scrape1Full4MoviesSearch(searchQuery: string): Promise<Full4Movie
           categories
         });
       } else {
-        console.log('Skipping incomplete item:', { 
+        console.log('Skipping incomplete item:', {
           hasTitle: !!title,
           hasUrl: !!postUrl,
           hasImage: !!imageUrl
@@ -271,10 +271,10 @@ async function scrape1Full4MoviesSearch(searchQuery: string): Promise<Full4Movie
 // Function to scrape latest content from homepage
 async function scrape1Full4MoviesHomepage(page: number = 1): Promise<Full4MoviesItem[]> {
   try {
-    const url = page === 1 
-      ? 'https://1full4movies.monster/' 
+    const url = page === 1
+      ? 'https://1full4movies.monster/'
       : `https://1full4movies.monster/page/${page}/`;
-    
+
     console.log(`Fetching 1Full4Movies homepage content from: ${url}`);
 
     const response = await fetch(url, {
@@ -299,21 +299,21 @@ async function scrape1Full4MoviesHomepage(page: number = 1): Promise<Full4Movies
     // Process content from .posts-wrapper article elements
     $('.posts-wrapper article').each((_, element) => {
       const $element = $(element);
-      
+
       const articleId = $element.attr('id') || '';
       const postId = articleId.replace('post-', '');
-      
+
       const articleClasses = $element.attr('class') || '';
       const categories = extractCategories(articleClasses);
-      
+
       let imageUrl = $element.find('.nv-post-thumbnail-wrap img').attr('src');
       imageUrl = normalizeImageUrl(imageUrl);
-      
+
       const altText = $element.find('.nv-post-thumbnail-wrap img').attr('alt') || '';
       const title = $element.find('.blog-entry-title a').text().trim();
-      const postUrl = $element.find('.blog-entry-title a').attr('href') || 
-                     $element.find('.nv-post-thumbnail-wrap a').attr('href');
-      
+      const postUrl = $element.find('.blog-entry-title a').attr('href') ||
+        $element.find('.nv-post-thumbnail-wrap a').attr('href');
+
       if (title && postUrl && imageUrl) {
         const qualities = extractQualityInfo(title);
         const languages = extractLanguageInfo(title);
@@ -323,9 +323,9 @@ async function scrape1Full4MoviesHomepage(page: number = 1): Promise<Full4Movies
         const isDualAudioContent = isDualAudio(title);
         const isMultiAudioContent = isMultiAudio(title);
         const year = extractYear(title);
-        
+
         const id = generateIdFromUrl(postUrl) || postId || `1full4movies-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
+
         items.push({
           id,
           title,
@@ -367,9 +367,9 @@ export async function GET(request: NextRequest): Promise<NextResponse<Full4Movie
 
     if (page < 1) {
       return NextResponse.json<Full4MoviesResponse>(
-        { 
-          success: false, 
-          error: 'Page number must be 1 or greater' 
+        {
+          success: false,
+          error: 'Page number must be 1 or greater'
         },
         { status: 400 }
       );
@@ -391,8 +391,8 @@ export async function GET(request: NextRequest): Promise<NextResponse<Full4Movie
       return NextResponse.json<Full4MoviesResponse>({
         success: false,
         error: 'No content found',
-        message: searchQuery 
-          ? `No results found for search query: "${searchQuery}"` 
+        message: searchQuery
+          ? `No results found for search query: "${searchQuery}"`
           : `No content found on page ${page}`,
         remainingRequests: authResult.apiKey ? (authResult.apiKey.requestsLimit - authResult.apiKey.requestsUsed) : 0
       });
@@ -410,10 +410,10 @@ export async function GET(request: NextRequest): Promise<NextResponse<Full4Movie
 
   } catch (error: unknown) {
     console.error('1Full4Movies API error:', error);
-    
+
     return NextResponse.json<Full4MoviesResponse>(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Failed to fetch content from 1Full4Movies',
         message: error instanceof Error ? error.message : 'Unknown error occurred'
       },

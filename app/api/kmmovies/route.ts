@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { load } from 'cheerio';
 import { validateApiKey, createUnauthorizedResponse } from '@/lib/middleware/api-auth';
+import { getKMMoviesUrl } from '@/lib/utils/providers';
 
 // Function to normalize image URLs - handling protocol-relative URLs
 function normalizeImageUrl(url: string | undefined): string | undefined {
@@ -12,9 +13,10 @@ function normalizeImageUrl(url: string | undefined): string | undefined {
 // Main function to fetch and parse HTML content from KMmovies
 async function scrapeKMmoviesData(page: number = 1) {
   try {
+    const baseUrl = await getKMMoviesUrl();
     const url = page === 1 
-      ? 'https://kmmovies.fans/' 
-      : `https://kmmovies.fans/page/${page}/`;
+      ? baseUrl 
+      : `${baseUrl}page/${page}/`;
     
     console.log(`Fetching KMmovies content from: ${url}`);
 
@@ -107,7 +109,8 @@ async function scrapeKMmoviesData(page: number = 1) {
 // Function to search content on KMmovies
 async function searchKMmoviesData(searchQuery: string) {
   try {
-    const searchUrl = `https://kmmovies.fans/?s=${encodeURIComponent(searchQuery)}`;
+    const baseUrl = await getKMMoviesUrl();
+    const searchUrl = `${baseUrl}?s=${encodeURIComponent(searchQuery)}`;
     
     console.log(`Searching KMmovies with query: ${searchQuery}`);
     

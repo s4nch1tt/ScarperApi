@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { load } from 'cheerio';
+import { getMovies4UUrl } from '@/lib/utils/providers';
 
 // Interface for actual download link
 interface ActualDownloadLink {
@@ -75,10 +76,13 @@ interface StreamResponse {
 }
 
 // Function to normalize image URLs
-function normalizeImageUrl(url: string | undefined): string | undefined {
+async function await normalizeImageUrl(url: string | undefined): Promise<string | undefined> {
   if (!url) return undefined;
   if (url.startsWith('//')) return 'https:' + url;
-  if (url.startsWith('/')) return 'https://movies4u.esq' + url;
+  if (url.startsWith('/')) {
+    const baseUrl = await getMovies4UUrl();
+    return baseUrl + url;
+  }
   return url;
 }
 
@@ -99,7 +103,8 @@ function extractIdFromUrl(url: string): string {
 // Main function to scrape Movies4U data
 async function scrapeMovies4UData(page: number = 1, searchQuery?: string): Promise<Movies4UItem[]> {
   try {
-    let url = 'https://movies4u.esq/';
+    const baseUrl = await getMovies4UUrl();
+    let url = baseUrl;
     
     if (searchQuery) {
       url += `?s=${encodeURIComponent(searchQuery)}`;
@@ -115,7 +120,7 @@ async function scrapeMovies4UData(page: number = 1, searchQuery?: string): Promi
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Referer': 'https://movies4u.esq/',
+        'Referer': '${baseUrl}/',
       },
       next: { revalidate: 0 }
     });
@@ -143,7 +148,7 @@ async function scrapeMovies4UData(page: number = 1, searchQuery?: string): Promi
           // Extract image information
           const $img = $postThumbnail.find('img');
           let imageUrl = $img.attr('src') || $img.attr('data-src') || '';
-          imageUrl = normalizeImageUrl(imageUrl);
+          imageUrl = await normalizeImageUrl(imageUrl);
           
           // Extract alt text (title)
           const altText = $img.attr('alt') || '';
@@ -188,7 +193,7 @@ async function scrapeMovies4UData(page: number = 1, searchQuery?: string): Promi
         if ($link.length > 0 && $img.length > 0) {
           const url = $link.attr('href') || '';
           let imageUrl = $img.attr('src') || $img.attr('data-src') || '';
-          imageUrl = normalizeImageUrl(imageUrl);
+          imageUrl = await normalizeImageUrl(imageUrl);
           const altText = $img.attr('alt') || $link.text().trim() || '';
           
           const videoLabel = $element.find('.video-label, .quality, .format').text().trim() || '';
@@ -230,7 +235,7 @@ async function scrapeDownloadLinks(url: string): Promise<ContentData> {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Referer': 'https://movies4u.esq/',
+        'Referer': '${baseUrl}/',
       },
       next: { revalidate: 0 }
     });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { load } from 'cheerio';
 import { validateApiKey, createUnauthorizedResponse } from '@/lib/middleware/api-auth';
+import { validate4kHDHubUrl } from '@/lib/utils/providers';
 
 interface DownloadLink {
   name: string;
@@ -121,7 +122,7 @@ async function scrape4KHDHubDetails(url: string): Promise<any> {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Referer': 'https://4khdhub.fans/',
+        'Referer': new URL(url).origin + '/',
       },
       next: { revalidate: 0 }
     });
@@ -353,12 +354,13 @@ export async function GET(request: NextRequest): Promise<NextResponse<FourKHDHub
     }
 
     // Validate URL format
-    if (!url.includes('4khdhub.fans')) {
+    const isValidUrl = await validate4kHDHubUrl(url.trim());
+    if (!isValidUrl) {
       return NextResponse.json<FourKHDHubDetailsResponse>(
         { 
           success: false, 
           error: 'Invalid URL format',
-          message: 'URL must be from 4khdhub.fans domain'
+          message: 'URL must be from a valid 4kHDHub domain'
         },
         { status: 400 }
       );

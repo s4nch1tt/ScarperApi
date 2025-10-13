@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { load } from 'cheerio';
 import { validateApiKey, createUnauthorizedResponse } from '@/lib/middleware/api-auth';
+import { validateFilmyFlyUrl } from '@/lib/utils/providers';
 
 interface DownloadLink {
   title: string;
@@ -57,7 +58,7 @@ async function scrapeFilmyFlyDetails(url: string): Promise<{ title: string; down
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
-        'Referer': 'https://filmyfly.dog//',
+        'Referer': new URL(url).origin + '/',
       },
     });
 
@@ -101,7 +102,7 @@ async function scrapeFilmyFlyDetails(url: string): Promise<{ title: string; down
             headers: {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
               'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-              'Referer': 'https://filmyfly.dog//',
+              'Referer': new URL(url).origin + '/',
             },
             signal: AbortSignal.timeout(15000)
           });
@@ -178,12 +179,13 @@ export async function GET(request: NextRequest): Promise<NextResponse<FilmyFlyDe
     }
 
     // Validate that it's a FilmyFly URL
-    if (!detailUrl.includes('filmyfly.men')) {
+    const isValidUrl = await validateFilmyFlyUrl(detailUrl);
+    if (!isValidUrl) {
       return NextResponse.json<FilmyFlyDetailsResponse>(
         { 
           success: false, 
           error: 'Invalid URL',
-          message: 'URL must be from filmyfly.men'
+          message: 'URL must be from a valid FilmyFly domain'
         },
         { status: 400 }
       );

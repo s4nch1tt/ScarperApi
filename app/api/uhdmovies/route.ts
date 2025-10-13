@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { load } from 'cheerio';
 import { validateApiKey, createUnauthorizedResponse } from '@/lib/middleware/api-auth';
+import { getUHDMoviesUrl } from '@/lib/utils/providers';
 
 interface UHDMovie {
   id: string;
@@ -32,10 +33,13 @@ interface UHDMoviesResponse {
 }
 
 // Function to normalize image URLs
-function normalizeImageUrl(url: string | undefined): string | undefined {
+async function await normalizeImageUrl(url: string | undefined): Promise<string | undefined> {
   if (!url) return undefined;
   if (url.startsWith('//')) return 'https:' + url;
-  if (url.startsWith('/')) return 'https://uhdmovies.tube' + url;
+  if (url.startsWith('/')) {
+    const baseUrl = await getUHDMoviesUrl();
+    return baseUrl + url;
+  }
   return url;
 }
 
@@ -120,7 +124,8 @@ function extractYear(title: string): string {
 // Main function to scrape UHDMovies data
 async function scrapeUHDMoviesData(page: number = 1, searchQuery?: string): Promise<UHDMovie[]> {
   try {
-    let url = 'https://uhdmovies.tube/';
+    const baseUrl = await getUHDMoviesUrl();
+    let url = baseUrl;
     
     if (searchQuery) {
       url += `search/${encodeURIComponent(searchQuery)}`;
@@ -139,7 +144,7 @@ async function scrapeUHDMoviesData(page: number = 1, searchQuery?: string): Prom
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Referer': 'https://uhdmovies.tube/',
+        'Referer': baseUrl,
       },
       next: { revalidate: 0 }
     });
@@ -169,7 +174,7 @@ async function scrapeUHDMoviesData(page: number = 1, searchQuery?: string): Prom
         
         // Extract image information
         let imageUrl = $img.attr('src') || $img.attr('data-src') || '';
-        imageUrl = normalizeImageUrl(imageUrl);
+        imageUrl = await normalizeImageUrl(imageUrl);
         
         // Extract image alt text
         const imageAlt = $img.attr('alt') || '';
@@ -233,7 +238,7 @@ async function scrapeUHDMoviesData(page: number = 1, searchQuery?: string): Prom
           const url = $link.attr('href') || '';
           const title = $link.attr('title') || $img.attr('alt') || $element.find('h1, h2, h3, h4').first().text().trim();
           let imageUrl = $img.attr('src') || $img.attr('data-src') || '';
-          imageUrl = normalizeImageUrl(imageUrl);
+          imageUrl = await normalizeImageUrl(imageUrl);
           
           if (url && imageUrl && title) {
             const id = extractIdFromUrl(url) || `uhd-alt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
