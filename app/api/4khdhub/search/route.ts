@@ -14,17 +14,17 @@ interface SearchResult {
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const query = searchParams.get("query");
+    const query = searchParams.get("q");
 
     if (!query) {
       return NextResponse.json(
-        { error: "Search query parameter is required" },
+        { error: "Query parameter 'q' is required" },
         { status: 400 }
       );
     }
 
     const baseUrl = await getBaseUrl("4kHDHub");
-    const fetchUrl = `${baseUrl}/s=${encodeURIComponent(query)}`;
+    const fetchUrl = `${baseUrl}/?s=${encodeURIComponent(query)}`;
 
     const response = await fetch(fetchUrl, {
       headers: {

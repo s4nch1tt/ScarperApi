@@ -13,12 +13,12 @@ interface SearchResult {
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const query = searchParams.get("s");
+    const query = searchParams.get("q") || searchParams.get("s");
     const page = searchParams.get("page") || "1";
 
     if (!query) {
       return NextResponse.json(
-        { error: "Search query parameter is required" },
+        { error: "Query parameter 'q' is required" },
         { status: 400 }
       );
     }
