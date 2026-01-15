@@ -1,4 +1,7 @@
 import DomeGallery from "@/components/DomeGallery";
+import { Button } from "@/components/ui/button";
+import Image from "next/image";
+import Link from "next/link";
 
 async function getTrendingMovies() {
   const response = await fetch(
@@ -26,6 +29,29 @@ export default async function Home() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-zinc-950 font-sans overflow-hidden">
+      {/* Login/Signup Buttons */}
+       <div className="fixed top-6 left-6 z-50">
+          <Image
+            src="/logo.svg" 
+            alt="Logo" 
+            width={40} 
+            height={40}
+            priority
+          />
+        </div>
+      <div className="fixed top-6 right-6 z-50 flex gap-3">
+        <Link href="/login">
+          <Button variant="outline" size="default">
+            Login
+          </Button>
+        </Link>
+        <Link href="/signup">
+          <Button variant="default" size="default">
+            Sign Up
+          </Button>
+        </Link>
+      </div>
+
       <div className="absolute inset-0 w-full h-full">
         <DomeGallery 
           images={images}

@@ -49,10 +49,20 @@ async function searchProvider(
 
     const data = await response.json();
     
-    // Normalize response format
-    const results = data.data || data.results || [];
+    let results: unknown[] = [];
     
-    // Add provider name to each result
+    if (data.data && typeof data.data === 'object') {
+      if (Array.isArray(data.data.results)) {
+        results = data.data.results;
+      } else if (Array.isArray(data.data)) {
+        results = data.data;
+      }
+    } else if (Array.isArray(data.results)) {
+      results = data.results;
+    } else if (Array.isArray(data)) {
+      results = data;
+    }
+    
     const normalizedResults = results.map((result: Record<string, unknown>) => ({
       ...result,
       provider: providerName,
