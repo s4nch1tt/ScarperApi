@@ -21,7 +21,7 @@ interface NetMirrorSearchResponse {
  */
 async function searchNetMirror(query: string, timestamp: string): Promise<Record<string, unknown> | { rawResponse: string; contentType: string; searchUrl: string }> {
   try {
-    const baseUrl = await getBaseUrl('netmirror');
+    const baseUrl = await getBaseUrl('nfmirror');
     const cookies = await getCookies();
     
     // Remove trailing slash from baseUrl if it exists, then add search.php

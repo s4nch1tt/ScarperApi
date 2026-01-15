@@ -17,7 +17,7 @@ interface NetMirrorPostResponse {
  */
 async function fetchNetMirrorPost(id: string, timestamp: string): Promise<Record<string, unknown>> {
     try {
-        const baseUrl = await getBaseUrl('netmirror');
+        const baseUrl = await getBaseUrl('nfmirror');
         const cookies = await getCookies();
 
         // Remove trailing slash from baseUrl if it exists, then add post.php
