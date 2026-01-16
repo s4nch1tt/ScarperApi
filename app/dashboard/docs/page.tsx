@@ -14,6 +14,8 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ChevronDown, Copy, Play, Check, Loader2 } from "lucide-react"
 import { useSession } from "@/lib/auth-client"
+import { ANIMESALT_ENDPOINTS } from "../../../components/docs-components/animesalt-docs"
+import { KMMOVIES_ENDPOINTS } from "../../../components/docs-components/kmmovies-docs"
 
 interface ApiEndpoint {
   name: string
@@ -1172,7 +1174,9 @@ console.log(details);`,
     }
   ]
 }`
-  }
+  },
+  ...ANIMESALT_ENDPOINTS,
+  ...KMMOVIES_ENDPOINTS
 ]
 
 export default function DocumentationPage() {
