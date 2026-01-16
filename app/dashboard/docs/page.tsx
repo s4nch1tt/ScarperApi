@@ -1123,7 +1123,7 @@ console.log(results);`,
   {
     "title": "Joker",
     "url": "/movie/joker-2019",
-    "imageUrl": "https://...",
+     "imageUrl": "https://...",
     "rating": "8.4"
   }
 ]`

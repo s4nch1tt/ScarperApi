@@ -102,6 +102,8 @@ export default async function Home() {
         </Link>
       </div>
 
+      
+
       <div className="absolute inset-0 w-full h-full">
         <DomeGallery 
           images={images}
