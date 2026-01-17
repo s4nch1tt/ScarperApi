@@ -20,6 +20,7 @@ import { KMMOVIES_ENDPOINTS } from "../../../components/docs-components/kmmovies
 import { NETMIRROR_ENDPOINTS } from "../../../components/docs-components/netmirror-docs"
 import { XM_ENDPOINTS } from "../../../components/docs-components/xm-docs"
 import { XOZ_ENDPOINTS } from "../../../components/docs-components/xoz-docs"
+import { XS_ENDPOINTS } from "../../../components/docs-components/xs-docs"
 import { EXTRACTORS_ENDPOINTS } from "../../../components/docs-components/extractors-docs"
 
 interface ApiEndpoint {
@@ -1256,6 +1257,7 @@ console.log(details);`,
   ...NETMIRROR_ENDPOINTS,
   ...XM_ENDPOINTS,
   ...XOZ_ENDPOINTS,
+  ...XS_ENDPOINTS,
   ...EXTRACTORS_ENDPOINTS
 ]
 
