@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { apiKey } from "@/lib/db/schema";
+import { apiKey, user } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -86,7 +86,7 @@ export async function validateApiKey(
       };
     }
 
-    // Check quota
+    // Check key-level quota
     if (keyRecord.requestCount >= keyRecord.requestQuota) {
       return {
         valid: false,
@@ -94,15 +94,46 @@ export async function validateApiKey(
       };
     }
 
-    // Increment request count and update last used
-    await db
-      .update(apiKey)
-      .set({
-        requestCount: keyRecord.requestCount + 1,
-        lastUsedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(apiKey.id, keyRecord.id));
+    // Get user data to check user-level quota
+    const [userData] = await db
+      .select()
+      .from(user)
+      .where(eq(user.id, keyRecord.userId))
+      .limit(1);
+
+    if (!userData) {
+      return {
+        valid: false,
+        error: "User not found",
+      };
+    }
+
+    // Check user-level quota (prevents unlimited access by recreating keys)
+    if (userData.totalRequestCount >= userData.totalRequestQuota) {
+      return {
+        valid: false,
+        error: "User quota exceeded. Cannot get more requests by recreating API keys.",
+      };
+    }
+
+    // Increment both key-level and user-level request counts
+    await Promise.all([
+      db
+        .update(apiKey)
+        .set({
+          requestCount: keyRecord.requestCount + 1,
+          lastUsedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(apiKey.id, keyRecord.id)),
+      db
+        .update(user)
+        .set({
+          totalRequestCount: userData.totalRequestCount + 1,
+          updatedAt: new Date(),
+        })
+        .where(eq(user.id, keyRecord.userId))
+    ]);
 
     return {
       valid: true,

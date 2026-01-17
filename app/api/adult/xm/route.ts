@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       videos: []
     };
 
-    const extractVideos = ($: cheerio.CheerioAPI) => {
+    const extractVideos = ($: ReturnType<typeof cheerio.load>) => {
       const videos: typeof data.videos = [];
       
       try {
@@ -56,7 +56,28 @@ export async function GET(request: NextRequest) {
                 if (jsonData?.layoutPage?.videoListProps?.videoThumbProps) {
                   const videoThumbProps = jsonData.layoutPage.videoListProps.videoThumbProps;
                   
-                  videoThumbProps.forEach((video: any) => {
+                  videoThumbProps.forEach((video: {
+                    id: number;
+                    title: string;
+                    duration: number;
+                    created: number;
+                    videoType: string;
+                    pageURL: string;
+                    thumbURL: string;
+                    imageURL: string;
+                    previewThumbURL: string;
+                    spriteURL: string;
+                    trailerURL: string;
+                    views: number;
+                    landing?: {
+                      type?: string;
+                      id?: number;
+                      name?: string;
+                      logo?: string;
+                      link?: string;
+                      subscribers?: number | null;
+                    };
+                  }) => {
                     if (video.id && video.title) {
                       videos.push({
                         id: video.id,

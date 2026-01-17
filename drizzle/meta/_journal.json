@@ -8,6 +8,13 @@
       "when": 1768490229615,
       "tag": "0000_stale_paladin",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1768638303477,
+      "tag": "0001_needy_amphibian",
+      "breakpoints": true
     }
   ]
 }

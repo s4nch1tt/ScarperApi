@@ -5,6 +5,23 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -16,12 +33,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState, useEffect } from "react";
 import { ALL_PROVIDERS, type ProviderName } from "@/lib/provider-cache";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Settings } from "lucide-react";
 
 export default function SettingsPage() {
   const [enabledProviders, setEnabledProviders] = useState<ProviderName[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showAdultConfirm, setShowAdultConfirm] = useState(false);
+  const [showProviderManagement, setShowProviderManagement] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     fetchProviders();
@@ -75,6 +96,7 @@ export default function SettingsPage() {
       if (res.ok) {
         const data = await res.json();
         setEnabledProviders(data.enabledProviders);
+        setShowProviderManagement(false);
         alert("Provider settings saved successfully");
       } else {
         alert("Failed to save provider settings");
@@ -87,6 +109,41 @@ export default function SettingsPage() {
     }
   };
 
+  const providersList = (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Enable or disable content providers for API access
+      </p>
+      {!loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {ALL_PROVIDERS.map((provider) => (
+            <div 
+              key={provider} 
+              className={`flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors ${
+                provider === "Adult" ? "border-red-500/50" : ""
+              }`}
+            >
+              <div className="flex-1">
+                <Label className="cursor-pointer font-medium flex items-center gap-2">
+                  {provider}
+                  {provider === "Adult" && (
+                    <span className="text-xs text-red-500">(18+)</span>
+                  )}
+                </Label>
+              </div>
+              <Switch
+                checked={enabledProviders.includes(provider)}
+                onCheckedChange={() => toggleProvider(provider)}
+              />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div>
@@ -97,56 +154,79 @@ export default function SettingsPage() {
       </div>
 
       <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Providers</h2>
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Enable or disable content providers for API access
-          </p>
-          {!loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {ALL_PROVIDERS.map((provider) => (
-                <div 
-                  key={provider} 
-                  className={`flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors ${
-                    provider === "Adult" ? "border-red-500/50" : ""
-                  }`}
-                >
-                  <div className="flex-1">
-                    <Label className="cursor-pointer font-medium flex items-center gap-2">
-                      {provider}
-                      {provider === "Adult" && (
-                        <span className="text-xs text-red-500">(18+)</span>
-                      )}
-                    </Label>
-                  </div>
-                  <Switch
-                    checked={enabledProviders.includes(provider)}
-                    onCheckedChange={() => toggleProvider(provider)}
-                  />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">Loading...</p>
-          )}
-          <div className="flex justify-end pt-4 border-t">
-            <Button onClick={saveProviders} disabled={saving}>
-              {saving ? "Saving..." : "Save Provider Settings"}
-            </Button>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-semibold">Providers</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {enabledProviders.length} of {ALL_PROVIDERS.length} providers enabled
+            </p>
           </div>
+          <Button 
+            onClick={() => setShowProviderManagement(true)}
+            variant="outline"
+            className="gap-2"
+          >
+            <Settings className="h-4 w-4" />
+            Manage Providers
+          </Button>
         </div>
       </Card>
+
+      {isMobile ? (
+        <Drawer open={showProviderManagement} onOpenChange={setShowProviderManagement}>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Manage Providers</DrawerTitle>
+              <DrawerDescription>
+                Enable or disable content providers for API access
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 max-h-[60vh] overflow-y-auto">
+              {providersList}
+            </div>
+            <DrawerFooter>
+              <Button onClick={saveProviders} disabled={saving}>
+                {saving ? "Saving..." : "Save Changes"}
+              </Button>
+              <DrawerClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={showProviderManagement} onOpenChange={setShowProviderManagement}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Manage Providers</DialogTitle>
+              <DialogDescription>
+                Enable or disable content providers for API access
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              {providersList}
+            </div>
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowProviderManagement(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={saveProviders} disabled={saving}>
+                {saving ? "Saving..." : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <AlertDialog open={showAdultConfirm} onOpenChange={setShowAdultConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Adult Content Confirmation</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p className="font-semibold">Are you 18 years or older?</p>
-              <p className="text-sm">
-                By enabling this provider, you confirm that you are at least 18 years of age 
-                and agree to access adult content. This action will be logged.
-              </p>
+            <AlertDialogDescription>
+              Are you 18 years or older? By enabling this provider, you confirm that you are at least 18 years of age and agree to access adult content. This action will be logged.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
