@@ -72,7 +72,7 @@ console.log(data);`,
     parameters: [
       { name: "query", type: "string", required: true, description: "Search query" },
     ],
-    tsExample: `const response = await fetch(\`\${baseUrl}/api/adult/xs/search?query=\${query}\`, {
+    tsExample: `const response = await fetch(\`\${baseUrl}/api/adult/xs/search?q=\${query}\`, {
   method: 'GET',
   headers: {
     'x-api-key': 'YOUR_API_KEY',
