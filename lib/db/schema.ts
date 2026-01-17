@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer, jsonb } from "drizzle-orm/pg-core";
 
 // User table
 export const user = pgTable("user", {
@@ -66,6 +66,22 @@ export const apiKey = pgTable("api_key", {
   requestCount: integer("request_count").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
   lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// User settings
+export const userSettings = pgTable("user_settings", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  // Names of enabled non-adult providers
+  enabledProviders: jsonb("enabled_providers").$type<string[] | null>().default(null),
+  // Whether adult content routes are enabled for this user
+  adultEnabled: boolean("adult_enabled").notNull().default(false),
+  // Timestamp when user confirmed 18+
+  adultConsentAt: timestamp("adult_consent_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
