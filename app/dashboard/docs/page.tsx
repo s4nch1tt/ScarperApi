@@ -21,6 +21,7 @@ import { NETMIRROR_ENDPOINTS } from "../../../components/docs-components/netmirr
 import { XM_ENDPOINTS } from "../../../components/docs-components/xm-docs"
 import { XOZ_ENDPOINTS } from "../../../components/docs-components/xoz-docs"
 import { XS_ENDPOINTS } from "../../../components/docs-components/xs-docs"
+import { XP_ENDPOINTS } from "../../../components/docs-components/xp-docs"
 import { EXTRACTORS_ENDPOINTS } from "../../../components/docs-components/extractors-docs"
 import { UHDMOVIES_ENDPOINTS } from "../../../components/docs-components/uhdmovies-docs"
 import { MOD_ENDPOINTS } from "../../../components/docs-components/mod-docs"
@@ -1260,6 +1261,7 @@ console.log(details);`,
   ...XM_ENDPOINTS,
   ...XOZ_ENDPOINTS,
   ...XS_ENDPOINTS,
+  ...XP_ENDPOINTS,
   ...EXTRACTORS_ENDPOINTS,
   ...UHDMOVIES_ENDPOINTS,
   ...MOD_ENDPOINTS
