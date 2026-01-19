@@ -1545,6 +1545,157 @@ console.log(details);`,
   ]
 }`
   },
+  {
+    name: "ZinkCloud Extract",
+    method: "GET",
+    endpoint: "/api/zinkmovies/zinkcloud",
+    provider: "ZinkMovies",
+    description: "Extract file info and HubCloud download links from ZinkCloud URL",
+    requiresAuth: true,
+    parameters: [
+      { name: "url", type: "string", required: true, description: "ZinkCloud URL to extract" },
+    ],
+    tsExample: `const response = await fetch(\`\${baseUrl}/api/zinkmovies/zinkcloud?url=\${encodeURIComponent(zinkcloudUrl)}\`, {
+  method: 'GET',
+  headers: {
+    'x-api-key': 'YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  }
+});
+
+interface ZinkCloudDetails {
+  success: boolean;
+  data: {
+    fileInfo: {
+      fileName: string;
+      format: string;
+      fileSize: string;
+      addedOn: string;
+    };
+    hubCloudLinks: Array<{
+      url: string;
+      title: string;
+    }>;
+  };
+}
+
+const details: ZinkCloudDetails = await response.json();
+console.log(details);`,
+    jsExample: `fetch(\`\${baseUrl}/api/zinkmovies/zinkcloud?url=\${encodeURIComponent(zinkcloudUrl)}\`, {
+  method: 'GET',
+  headers: {
+    'x-api-key': 'YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  }
+})
+  .then(response => response.json())
+  .then(details => console.log(details))
+  .catch(error => console.error('Error:', error));`,
+    curlExample: `curl -X GET "https://screenscapeapi.dev/api/zinkmovies/zinkcloud?url=https%3A%2F%2Fzinkcloud.example%2Ffile" \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json"`,
+    responseExample: `{
+  "success": true,
+  "data": {
+    "fileInfo": {
+      "fileName": "Movie.Name.2024.1080p.WEB-DL.mkv",
+      "format": "MKV",
+      "fileSize": "2.5 GB",
+      "addedOn": "2024-01-15"
+    },
+    "hubCloudLinks": [
+      {
+        "url": "https://hubcloud.example/d/abc123",
+        "title": "Download Link 1"
+      },
+      {
+        "url": "https://hubcloud.example/d/xyz789",
+        "title": "Download Link 2"
+      }
+    ]
+  }
+}`
+  },
+  {
+    name: "Nextdrive Episodes Extract",
+    method: "GET",
+    endpoint: "/api/zeefliz/nextdrive",
+    provider: "Zeefliz",
+    description: "Extract episode links and ZeeCloud download links from Nextdrive/Zeefliz page URL",
+    requiresAuth: true,
+    parameters: [
+      { name: "url", type: "string", required: true, description: "Nextdrive page URL to extract episodes from" },
+    ],
+    tsExample: `const response = await fetch(\`\${baseUrl}/api/zeefliz/nextdrive?url=\${encodeURIComponent(nextdriveUrl)}\`, {
+  method: 'GET',
+  headers: {
+    'x-api-key': 'YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  }
+});
+
+interface NextdriveData {
+  success: boolean;
+  data: {
+    title: string;
+    note?: string;
+    episodes: Array<{
+      episode: string;
+      episodeNumber: string;
+      url: string;
+      type: string; // 'Zee-Cloud' | 'G-Direct' | 'Batch/Zip'
+    }>;
+    zeeCloudLinks: string[];
+  };
+}
+
+const episodeData: NextdriveData = await response.json();
+console.log(episodeData);`,
+    jsExample: `fetch(\`\${baseUrl}/api/zeefliz/nextdrive?url=\${encodeURIComponent(nextdriveUrl)}\`, {
+  method: 'GET',
+  headers: {
+    'x-api-key': 'YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  }
+})
+  .then(response => response.json())
+  .then(episodeData => console.log(episodeData))
+  .catch(error => console.error('Error:', error));`,
+    curlExample: `curl -X GET "https://screenscapeapi.dev/api/zeefliz/nextdrive?url=https%3A%2F%2Fnextdrive.example%2Fshow" \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json"`,
+    responseExample: `{
+  "success": true,
+  "data": {
+    "title": "Show Name Season 1",
+    "note": "Note: Use Download Manager for faster downloads",
+    "episodes": [
+      {
+        "episode": "Episode 1",
+        "episodeNumber": "1",
+        "url": "https://example.com/ep1",
+        "type": "Zee-Cloud"
+      },
+      {
+        "episode": "Episode 1",
+        "episodeNumber": "1",
+        "url": "https://example.com/ep1-direct",
+        "type": "G-Direct"
+      },
+      {
+        "episode": "Episode 2",
+        "episodeNumber": "2",
+        "url": "https://example.com/ep2",
+        "type": "Zee-Cloud"
+      }
+    ],
+    "zeeCloudLinks": [
+      "https://example.com/ep1",
+      "https://example.com/ep2"
+    ]
+  }
+}`
+  },
   ...ANIMESALT_ENDPOINTS,
   ...KMMOVIES_ENDPOINTS,
   ...NETMIRROR_ENDPOINTS,
