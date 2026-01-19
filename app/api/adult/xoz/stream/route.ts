@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { xozillaBaseUrl } from '@/app/url/baseurl';
 import { validateProviderAccess, createProviderErrorResponse } from '@/lib/provider-validator';
+import { fetchWithScraperApi } from '@/lib/scraper-api';
 
 export async function GET(request: NextRequest) {
   const validation = await validateProviderAccess(request, "Adult");
@@ -18,15 +18,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch the video page
-    const response = await axios.get(url, {
-      headers: {
-        'user-agent': 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36',
-        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-        'accept-language': 'en-US,en;q=0.9',
-      }
-    });
-
-    const html = response.data;
+    const html = await fetchWithScraperApi(url);
     const $ = cheerio.load(html);
 
     // Initialize data structure
@@ -44,6 +36,13 @@ export async function GET(request: NextRequest) {
       tags?: string;
       playerWidth?: string;
       playerHeight?: string;
+      relatedVideos?: Array<{
+        videoId: string;
+        title: string;
+        url: string;
+        thumbnailUrl?: string;
+        previewVideoUrl?: string;
+      }>;
     } = {
       success: false
     };
@@ -118,6 +117,50 @@ export async function GET(request: NextRequest) {
         { success: false, error: 'Failed to extract video URL from page' },
         { status: 404 }
       );
+    }
+
+    // Extract related videos
+    const relatedVideos: Array<{
+      videoId: string;
+      title: string;
+      url: string;
+      thumbnailUrl?: string;
+      previewVideoUrl?: string;
+    }> = [];
+
+    $('#list_videos_related_videos_items a.item').each((_, element) => {
+      const $element = $(element);
+      const href = $element.attr('href');
+      const vthumb = $element.attr('vthumb');
+      const title = $element.find('strong.title').text().trim();
+      
+      // Prioritize data-original or thumb attribute over src to avoid base64 placeholder
+      const $img = $element.find('img.thumb');
+      const thumbnailUrl = $img.attr('data-original') || $img.attr('thumb') || $img.attr('src');
+      
+      // Extract video ID from onclick attribute
+      const onclickAttr = $element.attr('onclick');
+      let videoId = '';
+      if (onclickAttr) {
+        const videoIdMatch = onclickAttr.match(/'event_label':\s*(\d+)/);
+        if (videoIdMatch) {
+          videoId = videoIdMatch[1];
+        }
+      }
+
+      if (href && title && videoId) {
+        relatedVideos.push({
+          videoId,
+          title,
+          url: href,
+          thumbnailUrl,
+          previewVideoUrl: vthumb
+        });
+      }
+    });
+
+    if (relatedVideos.length > 0) {
+      data.relatedVideos = relatedVideos;
     }
 
     return NextResponse.json(data, {

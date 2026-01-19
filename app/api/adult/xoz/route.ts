@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { xozillaBaseUrl } from '@/app/url/baseurl';
 import { validateProviderAccess, createProviderErrorResponse } from '@/lib/provider-validator';
+import { fetchWithScraperApi } from '@/lib/scraper-api';
 
 export async function GET(request: NextRequest) {
   const validation = await validateProviderAccess(request, "Adult");
@@ -11,15 +11,7 @@ export async function GET(request: NextRequest) {
   }
   try {
     // Fetch the homepage HTML
-    const response = await axios.get(xozillaBaseUrl, {
-      headers: {
-        'user-agent': 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36',
-        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-        'accept-language': 'en-US,en;q=0.9',
-      }
-    });
-
-    const html = response.data;
+    const html = await fetchWithScraperApi(xozillaBaseUrl);
     const $ = cheerio.load(html);
 
     // Initialize data structure

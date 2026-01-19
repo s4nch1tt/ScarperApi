@@ -6,7 +6,6 @@ const redis = new Redis({
 });
 
 const PROVIDER_CACHE_PREFIX = "user:providers:";
-const CACHE_TTL = 3600;
 
 export const ALL_PROVIDERS = [
   "4kHDHub",
@@ -57,7 +56,8 @@ export async function updateUserProviders(
   const cacheKey = `${PROVIDER_CACHE_PREFIX}${userId}`;
   
   try {
-    await redis.setex(cacheKey, CACHE_TTL, JSON.stringify(providers));
+    // Cache persists until user explicitly changes their provider settings
+    await redis.set(cacheKey, JSON.stringify(providers));
   } catch (error) {
     console.error("Cache write error:", error);
   }
