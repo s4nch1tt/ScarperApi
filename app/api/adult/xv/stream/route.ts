@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import { validateProviderAccess, createProviderErrorResponse } from '@/lib/provider-validator';
 
 const PROXY_URL = 'https://odd-cloud-1e14.hunternisha55.workers.dev/';
 const BASE_URL = 'https://xvideos.place';
@@ -31,11 +30,6 @@ interface VideoData {
 }
 
 export async function GET(request: NextRequest) {
-  const validation = await validateProviderAccess(request, "Adult");
-  if (!validation.valid) {
-    return createProviderErrorResponse(validation.error || "Unauthorized");
-  }
-
   try {
     const { searchParams } = new URL(request.url);
     const videoUrl = searchParams.get('url');
