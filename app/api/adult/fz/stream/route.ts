@@ -91,16 +91,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Step 2: Fetch iframe content to get video source
-    const iframeResponse = await axios.get(fullIframeUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Referer': videoUrl
-      }
-    });
-
-    const iframeHtml = iframeResponse.data;
+    const iframeHtml = await fetchWithScraperApi(fullIframeUrl);
     const $iframe = cheerio.load(iframeHtml);
 
     // Extract video source URL
