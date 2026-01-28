@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { fm } from '@/app/url/baseurl';
+import { fetchWithScraperApi } from '@/lib/scraper-api';
 
 interface RecommendedVideo {
   id: string;
@@ -36,15 +36,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Step 1: Fetch the video page to get iframe URL
-    const pageResponse = await axios.get(videoUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-      }
-    });
-
-    const pageHtml = pageResponse.data;
+    const pageHtml = await fetchWithScraperApi(videoUrl);
     const $page = cheerio.load(pageHtml);
 
     // Extract iframe URL from video player
